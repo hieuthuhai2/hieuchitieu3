@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Chi Tiêu Pro">
     
-    <title>Quản Lý Chi Tiêu - Đồng Bộ Realtime</title>
+    <title>Quản Lý Chi Tiêu - Tùy Chỉnh Full</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -18,13 +18,13 @@
     <!-- FIREBASE INIT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         window.isFirebaseReady = false;
 
         try {
-            // CẤU HÌNH CỦA BẠN (Đã kiểm tra OK)
+            // CẤU HÌNH
             const hardcodedConfig = {
                 apiKey: "AIzaSyADN0-ME1iLd2cKCaSQ6gg-xCuYzqLVOuk",
                 authDomain: "quanlychitieu-43b93.firebaseapp.com",
@@ -36,8 +36,6 @@
             };
 
             let firebaseConfig = hardcodedConfig;
-            
-            // Fallback: Check env or local storage
             if (typeof __firebase_config !== 'undefined') {
                 try { firebaseConfig = JSON.parse(__firebase_config); } catch (e) {}
             } else {
@@ -51,10 +49,14 @@
                 window.db = getFirestore(app);
                 window.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 
-                // Expose functions
+                // Expose
                 window.signInWithEmailAndPassword = signInWithEmailAndPassword;
                 window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
                 window.signOut = signOut;
+                window.setPersistence = setPersistence;
+                window.browserLocalPersistence = browserLocalPersistence;
+                window.browserSessionPersistence = browserSessionPersistence;
+                
                 window.collection = collection;
                 window.addDoc = addDoc;
                 window.doc = doc;
@@ -68,12 +70,18 @@
             }
         } catch (e) {
             console.error("Firebase Error:", e);
-            alert("Lỗi cấu hình Firebase: " + e.message);
+            alert("Lỗi cấu hình: " + e.message);
         }
     </script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        
+        /* TĂNG PADDING TOP CHO DYNAMIC ISLAND */
+        .safe-top-padding {
+            padding-top: max(5rem, env(safe-area-inset-top) + 2rem);
+        }
+
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
         .input-field { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; width: 100%; transition: all 0.2s; font-size: 16px; }
         .input-field:focus { border-color: #3b82f6; outline: none; ring: 2px solid #3b82f6; }
@@ -92,14 +100,14 @@
         .auth-user { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
     </style>
 </head>
-<body class="p-4 md:p-8 pb-20">
+<body class="px-4 pb-20 safe-top-padding">
     <div class="max-w-6xl mx-auto">
         <!-- HEADER -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-2xl font-bold text-slate-800">📊 Quản Lý Chi Tiêu</h1>
-                    <button onclick="openSettings()" class="text-slate-400 hover:text-slate-600 p-1" title="Cài đặt">
+                    <button onclick="openSettings()" class="text-slate-400 hover:text-slate-600 p-1 bg-white rounded-full shadow-sm" title="Cài đặt">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
                 </div>
@@ -115,13 +123,13 @@
 
             <!-- TOOLBAR -->
             <div class="flex flex-wrap items-center gap-3">
-                <select id="monthFilter" onchange="updateUI()" class="bg-white border border-slate-300 text-slate-700 py-2 px-4 rounded-lg focus:outline-none focus:border-blue-500 text-sm">
+                <select id="monthFilter" onchange="updateUI()" class="bg-white border border-slate-300 text-slate-700 py-2 px-4 rounded-lg focus:outline-none focus:border-blue-500 text-sm shadow-sm">
                     <option value="all">Tất cả thời gian</option>
                 </select>
-                <button onclick="copyToGoogleSheets()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium border border-blue-700">Copy Sheet</button>
-                <button onclick="downloadTemplate()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium">📂 Tải Mẫu</button>
+                <button onclick="copyToGoogleSheets()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium border border-blue-700 shadow-sm">Copy Sheet</button>
+                <button onclick="downloadTemplate()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-lg text-sm font-medium shadow-sm">📂 Tải Mẫu</button>
                 <input type="file" id="fileInput" accept=".xlsx" class="hidden" onchange="appendDataToExcel(this)">
-                <button onclick="document.getElementById('fileInput').click()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium">Nhập Excel</button>
+                <button onclick="document.getElementById('fileInput').click()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm">Nhập Excel</button>
             </div>
         </div>
 
@@ -155,10 +163,10 @@
                         <table class="w-full text-sm text-left">
                             <thead>
                                 <tr>
-                                    <th class="w-[35%]">Hạng mục</th>
+                                    <th class="w-[40%]">Hạng mục</th>
                                     <th class="w-[20%]">Ngân sách</th>
                                     <th class="w-[20%]">Đã chi</th>
-                                    <th class="w-[25%]">Còn lại</th>
+                                    <th class="w-[20%]">Còn lại</th>
                                 </tr>
                             </thead>
                             <tbody id="budgetBody"></tbody>
@@ -182,12 +190,7 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Phân loại</label>
                             <select id="category" class="input-field">
-                                <option value="fixed">Cố định (31.5%)</option>
-                                <option value="emergency">Khẩn cấp (10%)</option>
-                                <option value="longterm">Đầu tư dài hạn (20%)</option>
-                                <option value="shortterm">Đầu tư ngắn hạn (15%)</option>
-                                <option value="leisure">Giải trí (10%)</option>
-                                <option value="flex">Linh hoạt (13.5%)</option>
+                                <!-- JS sẽ điền options vào đây -->
                             </select>
                         </div>
                         <div class="md:col-span-4 mt-2">
@@ -231,44 +234,72 @@
 
                 <div class="card p-6 bg-slate-800 text-white shadow-xl">
                     <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
-                        <span>💡 Hướng dẫn Đồng Bộ</span>
+                        <span>💡 Trạng thái đồng bộ</span>
                     </h2>
                     <p id="syncStatus" class="text-sm opacity-90 leading-relaxed mb-2">Đang kết nối...</p>
                     <ul class="text-xs space-y-2 opacity-75">
-                        <li>1. Đăng nhập <b>CÙNG 1 TÀI KHOẢN</b> trên Laptop và Điện thoại.</li>
-                        <li>2. Dữ liệu sẽ tự động xuất hiện trên cả 2 máy.</li>
-                        <li>3. Trên iOS: Bấm Share -> Thêm vào MH Chính để dùng như App.</li>
+                        <li>• Hãy chọn <b>"Duy trì đăng nhập"</b> để không phải đăng nhập lại mỗi lần mở app.</li>
+                        <li>• Trên iPhone: Bấm Share -> Thêm vào MH Chính.</li>
                     </ul>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL SETTINGS -->
+    <!-- MODAL SETTINGS (UPDATED FOR DYNAMIC FUNDS) -->
     <div id="settingsModal" class="modal">
-        <div class="modal-content shadow-2xl animate-[fadeIn_0.2s_ease-out]">
+        <div class="modal-content shadow-2xl animate-[fadeIn_0.2s_ease-out] max-w-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold">Cài Đặt Hệ Thống</h2>
                 <button onclick="closeSettings()" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
             </div>
-            <div class="space-y-4">
+            
+            <div class="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+                <!-- 1. Income -->
                 <div>
                     <label class="block text-sm font-semibold mb-2 text-slate-700">1. Tổng thu nhập (VNĐ)</label>
                     <input type="number" id="settingIncome" class="input-field text-lg font-bold text-blue-600">
                 </div>
+
+                <!-- 2. Dynamic Budget Ratios (NEW) -->
                 <div class="border-t pt-4">
-                    <label class="block text-sm font-semibold mb-2 text-slate-700">2. Webhook URL (Make/Integromat)</label>
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="block text-sm font-semibold text-slate-700">2. Quản lý Quỹ (Tên & Tỷ lệ)</label>
+                        <span id="totalPercentDisplay" class="text-xs font-bold bg-slate-100 px-2 py-1 rounded">Tổng: 100%</span>
+                    </div>
+                    
+                    <!-- Header -->
+                    <div class="grid grid-cols-12 gap-2 text-xs font-bold text-slate-400 mb-2 px-1">
+                        <div class="col-span-1">Màu</div>
+                        <div class="col-span-5">Tên quỹ</div>
+                        <div class="col-span-3 text-center">Tỷ lệ (%)</div>
+                        <div class="col-span-3 text-right">Xóa</div>
+                    </div>
+
+                    <div id="budgetListContainer" class="space-y-2">
+                        <!-- JS sẽ render danh sách quỹ vào đây -->
+                    </div>
+
+                    <button onclick="addNewFundRow()" class="mt-3 text-sm text-blue-600 font-bold hover:bg-blue-50 px-3 py-2 rounded border border-dashed border-blue-300 w-full flex justify-center items-center gap-2">
+                        <span>+ Thêm quỹ mới</span>
+                    </button>
+                </div>
+
+                <!-- 3. Webhook -->
+                <div class="border-t pt-4">
+                    <label class="block text-sm font-semibold mb-2 text-slate-700">3. Webhook URL (Make/Integromat)</label>
                     <input type="text" id="settingWebhook" class="input-field text-sm font-mono" placeholder="https://hook.make.com/...">
                 </div>
             </div>
-            <div class="flex gap-3 justify-end mt-6">
+
+            <div class="flex gap-3 justify-end mt-6 border-t pt-4">
                 <button onclick="closeSettings()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Hủy</button>
                 <button onclick="saveSettings()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow font-semibold">Lưu Thay Đổi</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL LOGIN/REGISTER -->
+    <!-- MODAL LOGIN/REGISTER (UPDATED REMEMBER ME) -->
     <div id="loginModal" class="modal">
         <div class="modal-content shadow-2xl">
             <div class="flex justify-between items-center mb-6">
@@ -278,6 +309,12 @@
             <div class="space-y-4">
                 <div><label class="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" id="authEmail" class="input-field" placeholder="email@example.com"></div>
                 <div><label class="block text-sm font-medium text-slate-700 mb-1">Mật khẩu</label><input type="password" id="authPassword" class="input-field" placeholder="******"></div>
+                
+                <!-- REMEMBER ME CHECKBOX -->
+                <div class="flex items-center gap-2 mt-2">
+                    <input type="checkbox" id="authRemember" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked>
+                    <label for="authRemember" class="text-sm text-slate-600">Duy trì đăng nhập (Không hỏi lại lần sau)</label>
+                </div>
             </div>
             <div class="grid grid-cols-2 gap-3 mt-6">
                 <button onclick="handleLogin()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition">Đăng Nhập</button>
@@ -293,7 +330,6 @@
     <script type="module">
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
-        // Listener Unsubscribers
         let unsubscribeTrans = null;
         let unsubscribeSettings = null;
 
@@ -318,21 +354,20 @@
                     userDisplay.className = 'auth-status auth-user';
                     btnLogin.classList.add('hidden');
                     btnLogout.classList.remove('hidden');
-                    syncStatus.innerText = "✅ Đã kết nối máy chủ. Mọi thay đổi sẽ đồng bộ ngay lập tức.";
+                    syncStatus.innerText = "✅ Đã đồng bộ.";
                     syncStatus.className = "text-sm text-green-600 mb-2 font-medium";
                     
                     showToast(`Xin chào ${user.email}`, 'info');
                     await loadDataFromCloud(user.uid);
                 } else {
                     // LOGGED OUT
-                    userDisplay.innerHTML = `👤 Khách (Lưu trên máy)`;
+                    userDisplay.innerHTML = `👤 Khách`;
                     userDisplay.className = 'auth-status auth-guest';
                     btnLogin.classList.remove('hidden');
                     btnLogout.classList.add('hidden');
-                    syncStatus.innerText = "⚠️ Đang chạy chế độ Offline. Vui lòng đăng nhập để đồng bộ.";
+                    syncStatus.innerText = "⚠️ Chưa đăng nhập.";
                     syncStatus.className = "text-sm text-yellow-600 mb-2";
 
-                    // Cleanup listeners
                     if (unsubscribeTrans) unsubscribeTrans();
                     if (unsubscribeSettings) unsubscribeSettings();
                     
@@ -343,52 +378,49 @@
 
         function initOfflineMode() {
             document.getElementById('userDisplay').innerHTML = `👤 Offline`;
-            document.getElementById('syncStatus').innerText = "Chế độ Offline.";
+            document.getElementById('syncStatus').innerText = "Offline Mode.";
             loadDataFromLocal();
         }
 
-        // --- REALTIME SYNC ENGINE ---
         async function loadDataFromCloud(userId) {
             if (!window.db) return;
 
-            // 1. Transactions Sync (Realtime)
+            // Transactions
             const transRef = window.collection(window.db, 'artifacts', window.appId, 'users', userId, 'transactions');
             if (unsubscribeTrans) unsubscribeTrans();
-
             unsubscribeTrans = window.onSnapshot(transRef, (snapshot) => {
                 transactions = [];
                 snapshot.forEach(doc => { transactions.push({ id: doc.id, ...doc.data() }); });
                 transactions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                 updateMonthFilterOptions();
                 updateUI();
-            }, (error) => {
-                console.error("Sync Trans Error", error);
-                if (error.code === 'permission-denied') {
-                    alert("Lỗi quyền truy cập Firestore! Bạn đã sửa Rules trong Firebase Console chưa?");
-                }
             });
 
-            // 2. Settings Sync (Realtime - NEW)
+            // Settings (Listen for budgetRatios changes)
             const settingsRef = window.doc(window.db, 'artifacts', window.appId, 'users', userId, 'settings', 'config');
             if (unsubscribeSettings) unsubscribeSettings();
-
             unsubscribeSettings = window.onSnapshot(settingsRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     if (data.totalIncome) totalIncome = data.totalIncome;
                     if (data.webhookUrl) webhookUrl = data.webhookUrl;
-                    updateUI(); // Cập nhật lại UI ngay khi Lương thay đổi trên thiết bị khác
+                    if (data.budgetRatios) currentBudgetRatios = data.budgetRatios; // SYNC DYNAMIC FUNDS
+                    updateUI();
                 } else {
-                    // Nếu chưa có, tạo mặc định
-                    window.setDoc(settingsRef, { totalIncome: 9500000, webhookUrl: '' });
+                    window.setDoc(settingsRef, { 
+                        totalIncome: 9500000, 
+                        webhookUrl: '',
+                        budgetRatios: defaultBudgetRatios
+                    });
                 }
-            }, (error) => console.error("Sync Settings Error", error));
+            });
         }
     </script>
 
     <script>
         // --- LOGIC ---
-        const budgetRatios = {
+        // Default Funds (Initial State)
+        const defaultBudgetRatios = {
             fixed: { name: 'Cố định', percent: 0.315, color: '#64748b' },
             emergency: { name: 'Khẩn cấp', percent: 0.10, color: '#f59e0b' },
             longterm: { name: 'Đầu tư dài hạn', percent: 0.20, color: '#10b981' },
@@ -397,6 +429,8 @@
             flex: { name: 'Linh hoạt', percent: 0.135, color: '#8b5cf6' }
         };
 
+        // Mutable State
+        let currentBudgetRatios = JSON.parse(JSON.stringify(defaultBudgetRatios));
         let transactions = [];
         let totalIncome = 9500000;
         let webhookUrl = '';
@@ -417,25 +451,11 @@
                 transactions = JSON.parse(localStorage.getItem('transactions')) || [];
                 totalIncome = parseFloat(localStorage.getItem('totalIncome')) || 9500000;
                 webhookUrl = localStorage.getItem('webhookUrl') || '';
+                const savedRatios = localStorage.getItem('budgetRatios');
+                if (savedRatios) currentBudgetRatios = JSON.parse(savedRatios);
                 updateMonthFilterOptions();
                 updateUI();
             } catch (e) { console.error("Lỗi đọc LocalStorage", e); }
-        }
-
-        // --- AUTH HELPER (VIETNAMESE ERRORS) ---
-        function getErrorMessage(code) {
-            const errors = {
-                'auth/email-already-in-use': 'Email này đã có người dùng.',
-                'auth/invalid-email': 'Địa chỉ Email không hợp lệ.',
-                'auth/weak-password': 'Mật khẩu yếu (cần tối thiểu 6 ký tự).',
-                'auth/user-not-found': 'Không tìm thấy tài khoản này.',
-                'auth/wrong-password': 'Sai mật khẩu.',
-                'auth/network-request-failed': 'Không có kết nối mạng.',
-                'auth/too-many-requests': 'Thử lại sau ít phút (quá nhiều lần sai).',
-                'auth/operation-not-allowed': 'Lỗi: Hãy vào Firebase Console -> Authentication -> Sign-in method -> Bật Email/Password lên!',
-                'permission-denied': 'Lỗi: Hãy vào Firestore -> Rules -> Cho phép đọc/ghi!'
-            };
-            return errors[code] || 'Lỗi: ' + code;
         }
 
         // --- AUTH ---
@@ -447,53 +467,277 @@
             if (!window.auth) return alert("Chờ kết nối...");
             const email = document.getElementById('authEmail').value;
             const pass = document.getElementById('authPassword').value;
+            const remember = document.getElementById('authRemember').checked;
+            
             if(!email || !pass) return showError("Vui lòng nhập đủ thông tin");
             
             try {
+                // SET PERSISTENCE BASED ON CHECKBOX
+                const persistence = remember ? window.browserLocalPersistence : window.browserSessionPersistence;
+                await window.setPersistence(window.auth, persistence);
+                
                 await window.signInWithEmailAndPassword(window.auth, email, pass);
                 document.getElementById('loginModal').style.display = 'none';
-            } catch (error) { showError(getErrorMessage(error.code)); }
+            } catch (error) { showError(error.message); }
         }
         async function handleRegister() {
-            if (!window.auth) return alert("Chờ kết nối...");
+            // Register flow (persistence default is usually Local)
             const email = document.getElementById('authEmail').value;
             const pass = document.getElementById('authPassword').value;
             if(!email || !pass) return showError("Vui lòng nhập đủ thông tin");
-
             try {
                 await window.createUserWithEmailAndPassword(window.auth, email, pass);
                 document.getElementById('loginModal').style.display = 'none';
-                showToast("Đăng ký thành công! Đã tự động đăng nhập.", "success");
-            } catch (error) { showError(getErrorMessage(error.code)); }
+                showToast("Đăng ký thành công!", "success");
+            } catch (error) { showError(error.message); }
         }
         async function handleLogout() {
-            if(confirm("Đăng xuất khỏi thiết bị này?")) await window.signOut(window.auth);
+            if(confirm("Đăng xuất?")) await window.signOut(window.auth);
         }
         function showError(msg) {
             const errEl = document.getElementById('authError');
-            errEl.innerText = msg;
-            errEl.classList.remove('hidden');
+            errEl.innerText = msg; errEl.classList.remove('hidden');
         }
 
-        // --- CORE ---
+        // --- UI RENDER & LOGIC ---
+        function calculateBudgets() {
+            document.getElementById('incomeDisplay').innerText = `Ngân sách: ${formatMoney(totalIncome)}`;
+            budgetConfig = {};
+            // Build Budget Config from Dynamic Ratios
+            for (let key in currentBudgetRatios) {
+                budgetConfig[key] = { ...currentBudgetRatios[key], budget: totalIncome * currentBudgetRatios[key].percent };
+            }
+            // Populate Category Select
+            const catSelect = document.getElementById('category');
+            catSelect.innerHTML = '';
+            for (let key in currentBudgetRatios) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.innerText = `${currentBudgetRatios[key].name} (${(currentBudgetRatios[key].percent * 100).toFixed(1)}%)`;
+                catSelect.appendChild(opt);
+            }
+        }
+
+        function updateUI() {
+            calculateBudgets();
+            const historyBody = document.getElementById('historyBody');
+            const budgetBody = document.getElementById('budgetBody');
+            const filterVal = document.getElementById('monthFilter').value;
+            let displayList = [...transactions].reverse();
+            if (filterVal !== 'all') displayList = displayList.filter(t => getMonthYear(t.date) === filterVal);
+            if (filterVal !== 'all') document.getElementById('filterLabel').innerText = `Dữ liệu Tháng ${filterVal}`;
+            else document.getElementById('filterLabel').innerText = `Toàn thời gian`;
+
+            const categorySpent = {}; // Init dynamic keys
+            for(let k in currentBudgetRatios) categorySpent[k] = 0;
+            
+            let totalSpent = 0;
+            historyBody.innerHTML = '';
+            
+            displayList.forEach((t) => {
+                const val = parseFloat(t.amount) || 0;
+                // If category exists, add to it. If deleted, maybe add to 'other' or ignore? 
+                // Let's just render it.
+                if (categorySpent[t.category] !== undefined) categorySpent[t.category] += val;
+                
+                totalSpent += val;
+                const originalIndex = transactions.indexOf(t);
+                const deleteParam = window.currentUser ? `'${t.id}'` : originalIndex;
+                const [datePart, timePart] = t.date.split(' ');
+                
+                // Handle deleted category name
+                const catName = budgetConfig[t.category] ? budgetConfig[t.category].name : `(Quỹ cũ: ${t.category})`;
+                const catColor = budgetConfig[t.category] ? '' : 'bg-gray-100 text-gray-400';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="py-3 text-slate-500 text-xs">
+                        <div class="font-medium">${datePart}</div>
+                        <div class="text-[10px] opacity-75">${timePart || ''}</div>
+                    </td>
+                    <td class="py-3 font-medium">
+                        <div class="truncate max-w-[120px]" title="${t.desc}">${t.desc}</div>
+                        <span class="text-[10px] bg-slate-100 px-1 rounded text-slate-500 ${catColor}">${catName}</span>
+                    </td>
+                    <td class="py-3 text-right font-bold text-red-500">-${formatMoney(val)}</td>
+                    <td class="py-3 text-right">
+                        <button onclick="handleDelete(${deleteParam})" class="text-slate-300 hover:text-red-500 p-1">✕</button>
+                    </td>
+                `;
+                historyBody.appendChild(row);
+            });
+
+            budgetBody.innerHTML = '';
+            for (const key in budgetConfig) {
+                const conf = budgetConfig[key];
+                const spent = categorySpent[key] || 0;
+                const remaining = conf.budget - spent;
+                const percent = (spent / conf.budget) * 100;
+                let barColor = 'bg-blue-500';
+                let statusClass = 'text-green-600';
+                if (percent >= 90) { barColor = 'bg-red-500'; statusClass = 'text-red-600 font-bold'; }
+                else if (percent >= 75) { barColor = 'bg-yellow-500'; statusClass = 'text-yellow-600'; }
+                const row = document.createElement('tr');
+                row.className = 'budget-row';
+                row.innerHTML = `
+                    <td>
+                        <div class="font-bold text-slate-700 flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full inline-block" style="background:${conf.color}"></span>
+                            ${conf.name}
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2"><div class="h-1.5 rounded-full ${barColor} transition-all duration-500" style="width: ${Math.min(percent, 100)}%"></div></div>
+                    </td>
+                    <td class="text-slate-500 text-xs">${formatMoney(conf.budget)}</td>
+                    <td class="text-slate-800 font-medium text-xs">${formatMoney(spent)}</td>
+                    <td class="${statusClass} font-bold text-xs">${formatMoney(remaining)}</td>
+                `;
+                budgetBody.appendChild(row);
+            }
+            document.getElementById('totalSpent').innerText = formatMoney(totalSpent);
+            document.getElementById('totalRemaining').innerText = formatMoney(totalIncome - totalSpent);
+            const rate = totalIncome > 0 ? (totalSpent / totalIncome) * 100 : 0;
+            document.getElementById('spendingRate').innerText = rate.toFixed(1) + '%';
+            updateChart(categorySpent);
+        }
+
+        // --- SETTINGS (DYNAMIC FUNDS) ---
+        function openSettings() {
+            document.getElementById('settingIncome').value = totalIncome;
+            document.getElementById('settingWebhook').value = webhookUrl;
+            renderBudgetInputs(); 
+            document.getElementById('settingsModal').style.display = "block";
+        }
+        function closeSettings() { document.getElementById('settingsModal').style.display = "none"; }
+
+        // Local state for settings editing
+        let tempRatios = {}; 
+
+        function renderBudgetInputs() {
+            const container = document.getElementById('budgetListContainer');
+            container.innerHTML = '';
+            // Clone to temp state
+            tempRatios = JSON.parse(JSON.stringify(currentBudgetRatios));
+            
+            Object.keys(tempRatios).forEach(key => {
+                addFundRowUI(key, tempRatios[key]);
+            });
+            window.updateTotalPercent();
+        }
+
+        function addFundRowUI(key, data) {
+            const container = document.getElementById('budgetListContainer');
+            const percentVal = (data.percent * 100).toFixed(1);
+            const div = document.createElement('div');
+            div.className = "grid grid-cols-12 gap-2 items-center fund-row";
+            div.dataset.key = key;
+            div.innerHTML = `
+                <div class="col-span-1">
+                    <input type="color" class="fund-color w-8 h-8 rounded border p-0 cursor-pointer" value="${data.color}">
+                </div>
+                <div class="col-span-5">
+                    <input type="text" class="fund-name input-field py-1 px-2 text-sm" value="${data.name}" placeholder="Tên quỹ">
+                </div>
+                <div class="col-span-3 relative">
+                    <input type="number" step="0.1" class="fund-percent input-field py-1 px-2 text-sm text-center font-bold" value="${percentVal}" oninput="window.updateTotalPercent()">
+                </div>
+                <div class="col-span-3 text-right">
+                    <button onclick="removeFundRow(this)" class="text-red-500 hover:bg-red-50 p-1 rounded text-xs font-bold px-2 border border-red-200">Xóa</button>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        window.addNewFundRow = function() {
+            const newKey = 'fund_' + Date.now();
+            const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+            addFundRowUI(newKey, { name: 'Quỹ Mới', percent: 0, color: randomColor });
+        }
+
+        window.removeFundRow = function(btn) {
+            if(confirm("Bạn có chắc muốn xóa quỹ này? Dữ liệu cũ sẽ không bị mất nhưng sẽ không hiển thị tên quỹ.")) {
+                btn.closest('.fund-row').remove();
+                window.updateTotalPercent();
+            }
+        }
+
+        window.updateTotalPercent = function() {
+            const inputs = document.querySelectorAll('.fund-percent');
+            let total = 0;
+            inputs.forEach(inp => total += parseFloat(inp.value || 0));
+            const display = document.getElementById('totalPercentDisplay');
+            display.innerText = `Tổng: ${total.toFixed(1)}%`;
+            if(Math.abs(total - 100) < 0.1) {
+                display.className = "text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded";
+            } else {
+                display.className = "text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded animate-pulse";
+            }
+        }
+        
+        async function saveSettings() {
+            const newIncome = parseFloat(document.getElementById('settingIncome').value);
+            const newWebhook = document.getElementById('settingWebhook').value.trim();
+
+            if (newIncome && newIncome > 0) totalIncome = newIncome;
+            webhookUrl = newWebhook;
+
+            // Reconstruct Ratios
+            const rows = document.querySelectorAll('.fund-row');
+            let newRatios = {};
+            let totalPercent = 0;
+            
+            rows.forEach(row => {
+                const key = row.dataset.key;
+                const name = row.querySelector('.fund-name').value;
+                const color = row.querySelector('.fund-color').value;
+                const percent = parseFloat(row.querySelector('.fund-percent').value);
+                
+                if(!name) return; // Skip empty
+                
+                newRatios[key] = { name, color, percent: percent / 100 };
+                totalPercent += percent;
+            });
+
+            if (Math.abs(totalPercent - 100) > 0.1) {
+                alert(`Tổng phần trăm phải là 100%. Hiện tại: ${totalPercent.toFixed(1)}%`);
+                return;
+            }
+            currentBudgetRatios = newRatios; // Update global
+
+            if (window.currentUser) {
+                try { 
+                    await window.setDoc(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'settings', 'config'), { 
+                        totalIncome: totalIncome, 
+                        webhookUrl: webhookUrl,
+                        budgetRatios: currentBudgetRatios // Sync new structure
+                    }); 
+                    showToast("Đã đồng bộ!", "success"); 
+                } 
+                catch(e) { showToast("Lỗi lưu Cloud: " + e.message, "error"); }
+            } else {
+                localStorage.setItem('totalIncome', totalIncome);
+                localStorage.setItem('webhookUrl', webhookUrl);
+                localStorage.setItem('budgetRatios', JSON.stringify(currentBudgetRatios));
+                showToast("Đã lưu máy!", "success");
+            }
+            updateUI();
+            closeSettings();
+        }
+
+        // --- Standard Logic (Transaction add, delete etc...) ---
         document.getElementById('transactionForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnAdd');
-            btn.disabled = true; btn.innerText = "Đang xử lý...";
-
+            btn.disabled = true; btn.innerText = "...";
             const desc = document.getElementById('desc').value;
             const amount = parseFloat(document.getElementById('amount').value);
             const category = document.getElementById('category').value;
-            
             const now = new Date();
             const d = now.getDate().toString().padStart(2, '0');
             const m = (now.getMonth() + 1).toString().padStart(2, '0');
             const y = now.getFullYear();
             const time = now.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
             const dateStr = `${d}/${m}/${y} ${time}`;
-            
             const newTransaction = { desc, amount, category, date: dateStr, timestamp: now.toISOString() };
-
             try {
                 if (window.currentUser && window.db) {
                     const colRef = window.collection(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions');
@@ -505,44 +749,21 @@
                     updateUI();
                 }
                 if(webhookUrl) sendToWebhook(newTransaction, 'add');
-                e.target.reset();
-                showToast("Đã thêm!", "success");
-                checkBudgetWarning(category, amount); // Check after adding
-            } catch (err) { 
-                console.error(err); 
-                if (err.code === 'permission-denied') alert("Lỗi ghi dữ liệu: Vui lòng kiểm tra Firestore Rules!");
-                else showToast("Lỗi: " + err.message, "error"); 
-            } 
-            finally { btn.disabled = false; btn.innerHTML = `<span>Thêm Giao Dịch</span>`; }
+                e.target.reset(); showToast("Đã thêm!", "success");
+            } catch (err) { console.error(err); } finally { btn.disabled = false; btn.innerHTML = `<span>Thêm Giao Dịch</span>`; }
         };
 
         async function handleDelete(idOrIndex) {
             if(!confirm('Xóa giao dịch này?')) return;
             let itemToDelete = null;
-
             if (window.currentUser && window.db) {
                 itemToDelete = transactions.find(t => t.id === idOrIndex);
-                if (itemToDelete) {
-                    try { await window.deleteDoc(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions', idOrIndex)); } 
-                    catch(e) { showToast("Lỗi xóa Cloud: " + e.message, "error"); return; }
-                }
+                if (itemToDelete) await window.deleteDoc(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions', idOrIndex));
             } else {
                 itemToDelete = transactions[idOrIndex];
-                if (itemToDelete) {
-                    transactions.splice(idOrIndex, 1);
-                    localStorage.setItem('transactions', JSON.stringify(transactions));
-                    updateUI();
-                }
+                if (itemToDelete) { transactions.splice(idOrIndex, 1); localStorage.setItem('transactions', JSON.stringify(transactions)); updateUI(); }
             }
             if (itemToDelete && webhookUrl) sendToWebhook(itemToDelete, 'delete');
-        }
-
-        // --- UI ---
-        function calculateBudgets() {
-            document.getElementById('incomeDisplay').innerText = `Ngân sách: ${formatMoney(totalIncome)}`;
-            for (let key in budgetRatios) {
-                budgetConfig[key] = { ...budgetRatios[key], budget: totalIncome * budgetRatios[key].percent };
-            }
         }
 
         function updateMonthFilterOptions() {
@@ -563,119 +784,29 @@
             if (months.includes(currentVal) || currentVal === 'all') filterSelect.value = currentVal;
         }
 
-        function updateUI() {
-            calculateBudgets();
-            const historyBody = document.getElementById('historyBody');
-            const budgetBody = document.getElementById('budgetBody');
-            const filterVal = document.getElementById('monthFilter').value;
-            let displayList = [...transactions].reverse();
-            if (filterVal !== 'all') {
-                displayList = displayList.filter(t => getMonthYear(t.date) === filterVal);
-                document.getElementById('filterLabel').innerText = `Dữ liệu Tháng ${filterVal}`;
-            } else { document.getElementById('filterLabel').innerText = `Dữ liệu toàn thời gian`; }
-
-            const categorySpent = { fixed: 0, emergency: 0, longterm: 0, shortterm: 0, leisure: 0, flex: 0 };
-            let totalSpent = 0;
-            historyBody.innerHTML = '';
-            
-            displayList.forEach((t) => {
-                const val = parseFloat(t.amount) || 0;
-                if (categorySpent[t.category] !== undefined) categorySpent[t.category] += val;
-                totalSpent += val;
-                const originalIndex = transactions.indexOf(t);
-                const deleteParam = window.currentUser ? `'${t.id}'` : originalIndex;
-                const [datePart, timePart] = t.date.split(' ');
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="py-3 text-slate-500 text-xs">
-                        <div class="font-medium">${datePart}</div>
-                        <div class="text-[10px] opacity-75">${timePart || ''}</div>
-                    </td>
-                    <td class="py-3 font-medium">
-                        <div class="truncate max-w-[120px]" title="${t.desc}">${t.desc}</div>
-                        <span class="text-[10px] bg-slate-100 px-1 rounded text-slate-400">${budgetConfig[t.category].name}</span>
-                    </td>
-                    <td class="py-3 text-right font-bold text-red-500">-${formatMoney(val)}</td>
-                    <td class="py-3 text-right">
-                        <button onclick="handleDelete(${deleteParam})" class="text-slate-300 hover:text-red-500 p-1">✕</button>
-                    </td>
-                `;
-                historyBody.appendChild(row);
-            });
-
-            budgetBody.innerHTML = '';
-            for (const key in budgetConfig) {
-                const conf = budgetConfig[key];
-                const spent = categorySpent[key];
-                const remaining = conf.budget - spent;
-                const percent = (spent / conf.budget) * 100;
-                let barColor = 'bg-blue-500';
-                let statusClass = 'text-green-600';
-                if (percent >= 90) { barColor = 'bg-red-500'; statusClass = 'text-red-600 font-bold'; }
-                else if (percent >= 75) { barColor = 'bg-yellow-500'; statusClass = 'text-yellow-600'; }
-                const row = document.createElement('tr');
-                row.className = 'budget-row';
-                row.innerHTML = `
-                    <td>
-                        <div class="font-bold text-slate-700">${conf.name}</div>
-                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2"><div class="h-1.5 rounded-full ${barColor} transition-all duration-500" style="width: ${Math.min(percent, 100)}%"></div></div>
-                    </td>
-                    <td class="text-slate-500 text-xs">${formatMoney(conf.budget)}</td>
-                    <td class="text-slate-800 font-medium text-xs">${formatMoney(spent)}</td>
-                    <td class="${statusClass} font-bold text-xs">${formatMoney(remaining)}</td>
-                `;
-                budgetBody.appendChild(row);
-            }
-            document.getElementById('totalSpent').innerText = formatMoney(totalSpent);
-            document.getElementById('totalRemaining').innerText = formatMoney(totalIncome - totalSpent);
-            const rate = totalIncome > 0 ? (totalSpent / totalIncome) * 100 : 0;
-            document.getElementById('spendingRate').innerText = rate.toFixed(1) + '%';
-            document.getElementById('spendingRate').style.color = rate > 90 ? '#ef4444' : '#1e293b';
-            updateChart(categorySpent);
+        function sendToWebhook(data, actionType = 'add') {
+            if(!webhookUrl) return;
+            const signedAmount = actionType === 'delete' ? -Math.abs(data.amount) : Math.abs(data.amount);
+            const catName = budgetConfig[data.category] ? budgetConfig[data.category].name : data.category;
+            const payload = { ...data, categoryName: catName, formattedAmount: formatMoney(data.amount), realAmount: signedAmount, status: actionType === 'delete' ? '-' : '+', action: actionType };
+            fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(e => console.error(e));
         }
 
-        // --- SETTINGS ---
-        function openSettings() {
-            document.getElementById('settingIncome').value = totalIncome;
-            document.getElementById('settingWebhook').value = webhookUrl;
-            document.getElementById('settingsModal').style.display = "block";
+        // Utils
+        const amountInput = document.getElementById('amount'); const suggestionBox = document.getElementById('amountSuggestions');
+        amountInput.addEventListener('input', function() {
+            const val = parseInt(this.value.replace(/[^0-9]/g, ''));
+            if (!val) { suggestionBox.classList.add('hidden'); return; }
+            const m = [1000, 10000, 100000, 1000000]; let html = '';
+            m.forEach(x => { const r = val * x; html += `<div class="p-2 hover:bg-slate-100 cursor-pointer text-sm" onclick="document.getElementById('amount').value=${r};this.parentElement.classList.add('hidden')">${formatMoney(r)}</div>`; });
+            suggestionBox.innerHTML = html; suggestionBox.classList.remove('hidden');
+        });
+        window.onclick = function(event) {
+            const modals = [document.getElementById('settingsModal'), document.getElementById('loginModal')];
+            modals.forEach(m => { if (event.target == m) m.style.display = "none"; });
         }
-        function closeSettings() { document.getElementById('settingsModal').style.display = "none"; }
+        document.addEventListener('click', (e) => { if(!amountInput.contains(e.target)) suggestionBox.classList.add('hidden'); });
         
-        async function saveSettings() {
-            const newIncome = parseFloat(document.getElementById('settingIncome').value);
-            const newWebhook = document.getElementById('settingWebhook').value.trim();
-
-            if (newIncome && newIncome > 0) totalIncome = newIncome;
-            webhookUrl = newWebhook;
-
-            if (window.currentUser) {
-                try { 
-                    await window.setDoc(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'settings', 'config'), { totalIncome: totalIncome, webhookUrl: webhookUrl }); 
-                    showToast("Đã đồng bộ!", "success"); 
-                } 
-                catch(e) { showToast("Lỗi lưu Cloud: " + e.message, "error"); }
-            } else {
-                localStorage.setItem('totalIncome', totalIncome);
-                localStorage.setItem('webhookUrl', webhookUrl);
-                showToast("Đã lưu vào máy!", "success");
-            }
-            updateUI();
-            closeSettings();
-        }
-
-        function checkBudgetWarning(category, newAmount) {
-            const currentMonth = new Date().toLocaleDateString('vi-VN', {month: '2-digit', year: 'numeric'}); 
-            // Simplified check logic, can be enhanced
-            const limit = budgetConfig[category].budget;
-            // Note: This check relies on current UI state, might need robustness
-        }
-        function clearAllData() {
-            if(!confirm('Xóa tất cả dữ liệu?')) return;
-            if (window.currentUser) alert("Vui lòng xóa từng món để đồng bộ an toàn.");
-            else { transactions = []; localStorage.setItem('transactions', JSON.stringify(transactions)); updateUI(); }
-        }
-
         let myChart = null;
         function updateChart(spentData) {
             const canvas = document.getElementById('budgetChart');
@@ -693,7 +824,7 @@
             let dataToExport = transactions;
             if (filterVal !== 'all') dataToExport = transactions.filter(t => getMonthYear(t.date) === filterVal);
             let text = "Ngày\tNội dung\tHạng mục\tSố tiền\n";
-            dataToExport.forEach(t => text += `${t.date}\t${t.desc}\t${budgetConfig[t.category].name}\t${t.amount}\n`);
+            dataToExport.forEach(t => text += `${t.date}\t${t.desc}\t${budgetConfig[t.category]?.name || t.category}\t${t.amount}\n`);
             const textArea = document.createElement("textarea"); textArea.value = text; document.body.appendChild(textArea); textArea.select();
             try { document.execCommand('copy'); showToast("Đã copy!", "success"); } catch (err) { showToast("Lỗi copy", "error"); } document.body.removeChild(textArea);
         }
@@ -713,36 +844,14 @@
                     let existingData = XLSX.utils.sheet_to_json(worksheet);
                     const filterVal = document.getElementById('monthFilter').value; let newData = transactions;
                     if (filterVal !== 'all') newData = transactions.filter(t => getMonthYear(t.date) === filterVal);
-                    const newDataFormatted = newData.map(t => ({ "Ngày": t.date, "Nội dung": t.desc, "Hạng mục": budgetConfig[t.category].name, "Số tiền": parseFloat(t.amount) }));
+                    const newDataFormatted = newData.map(t => ({ "Ngày": t.date, "Nội dung": t.desc, "Hạng mục": budgetConfig[t.category]?.name || t.category, "Số tiền": parseFloat(t.amount) }));
                     const combinedData = existingData.concat(newDataFormatted); const newWs = XLSX.utils.json_to_sheet(combinedData);
                     const newWb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(newWb, newWs, "Chi Tieu Gop"); XLSX.writeFile(newWb, "Chi_Tieu_Cap_Nhat.xlsx");
                     input.value = ''; showToast("Đã xuất file gộp thành công!", "success");
                 } catch(err) { console.error(err); alert("Lỗi đọc file Excel."); }
             }; reader.readAsArrayBuffer(file);
         }
-        function sendToWebhook(data, actionType = 'add') {
-            if(!webhookUrl) return;
-            const isDelete = actionType === 'delete';
-            const signedAmount = isDelete ? -Math.abs(data.amount) : Math.abs(data.amount);
-            const statusSymbol = isDelete ? '-' : '+';
-            const payload = { ...data, categoryName: budgetConfig[data.category].name, formattedAmount: formatMoney(data.amount), realAmount: signedAmount, status: statusSymbol, action: actionType };
-            fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .catch(error => console.error('Webhook Error:', error));
-        }
 
-        const amountInput = document.getElementById('amount'); const suggestionBox = document.getElementById('amountSuggestions');
-        amountInput.addEventListener('input', function() {
-            const val = parseInt(this.value.replace(/[^0-9]/g, ''));
-            if (!val) { suggestionBox.classList.add('hidden'); return; }
-            const m = [1000, 10000, 100000, 1000000]; let html = '';
-            m.forEach(x => { const r = val * x; html += `<div class="p-2 hover:bg-slate-100 cursor-pointer text-sm" onclick="document.getElementById('amount').value=${r};this.parentElement.classList.add('hidden')">${formatMoney(r)}</div>`; });
-            suggestionBox.innerHTML = html; suggestionBox.classList.remove('hidden');
-        });
-        window.onclick = function(event) {
-            const modals = [document.getElementById('settingsModal'), document.getElementById('loginModal')];
-            modals.forEach(m => { if (event.target == m) m.style.display = "none"; });
-        }
-        document.addEventListener('click', (e) => { if(!amountInput.contains(e.target)) suggestionBox.classList.add('hidden'); });
         if(!window.isFirebaseReady) updateUI();
     </script>
 </body>
