@@ -24,7 +24,7 @@
         window.isFirebaseReady = false;
 
         try {
-            // CẤU HÌNH CỦA BẠN
+            // CẤU HÌNH CỦA BẠN (Đã kiểm tra OK)
             const hardcodedConfig = {
                 apiKey: "AIzaSyADN0-ME1iLd2cKCaSQ6gg-xCuYzqLVOuk",
                 authDomain: "quanlychitieu-43b93.firebaseapp.com",
@@ -68,6 +68,7 @@
             }
         } catch (e) {
             console.error("Firebase Error:", e);
+            alert("Lỗi cấu hình Firebase: " + e.message);
         }
     </script>
 
@@ -360,7 +361,12 @@
                 transactions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                 updateMonthFilterOptions();
                 updateUI();
-            }, (error) => console.error("Sync Trans Error", error));
+            }, (error) => {
+                console.error("Sync Trans Error", error);
+                if (error.code === 'permission-denied') {
+                    alert("Lỗi quyền truy cập Firestore! Bạn đã sửa Rules trong Firebase Console chưa?");
+                }
+            });
 
             // 2. Settings Sync (Realtime - NEW)
             const settingsRef = window.doc(window.db, 'artifacts', window.appId, 'users', userId, 'settings', 'config');
@@ -416,6 +422,22 @@
             } catch (e) { console.error("Lỗi đọc LocalStorage", e); }
         }
 
+        // --- AUTH HELPER (VIETNAMESE ERRORS) ---
+        function getErrorMessage(code) {
+            const errors = {
+                'auth/email-already-in-use': 'Email này đã có người dùng.',
+                'auth/invalid-email': 'Địa chỉ Email không hợp lệ.',
+                'auth/weak-password': 'Mật khẩu yếu (cần tối thiểu 6 ký tự).',
+                'auth/user-not-found': 'Không tìm thấy tài khoản này.',
+                'auth/wrong-password': 'Sai mật khẩu.',
+                'auth/network-request-failed': 'Không có kết nối mạng.',
+                'auth/too-many-requests': 'Thử lại sau ít phút (quá nhiều lần sai).',
+                'auth/operation-not-allowed': 'Lỗi: Hãy vào Firebase Console -> Authentication -> Sign-in method -> Bật Email/Password lên!',
+                'permission-denied': 'Lỗi: Hãy vào Firestore -> Rules -> Cho phép đọc/ghi!'
+            };
+            return errors[code] || 'Lỗi: ' + code;
+        }
+
         // --- AUTH ---
         function openLoginModal() {
             document.getElementById('loginModal').style.display = 'block';
@@ -425,27 +447,31 @@
             if (!window.auth) return alert("Chờ kết nối...");
             const email = document.getElementById('authEmail').value;
             const pass = document.getElementById('authPassword').value;
+            if(!email || !pass) return showError("Vui lòng nhập đủ thông tin");
+            
             try {
                 await window.signInWithEmailAndPassword(window.auth, email, pass);
                 document.getElementById('loginModal').style.display = 'none';
-            } catch (error) { showError(error.message); }
+            } catch (error) { showError(getErrorMessage(error.code)); }
         }
         async function handleRegister() {
             if (!window.auth) return alert("Chờ kết nối...");
             const email = document.getElementById('authEmail').value;
             const pass = document.getElementById('authPassword').value;
+            if(!email || !pass) return showError("Vui lòng nhập đủ thông tin");
+
             try {
                 await window.createUserWithEmailAndPassword(window.auth, email, pass);
                 document.getElementById('loginModal').style.display = 'none';
-                showToast("Đăng ký thành công!", "success");
-            } catch (error) { showError(error.message); }
+                showToast("Đăng ký thành công! Đã tự động đăng nhập.", "success");
+            } catch (error) { showError(getErrorMessage(error.code)); }
         }
         async function handleLogout() {
             if(confirm("Đăng xuất khỏi thiết bị này?")) await window.signOut(window.auth);
         }
         function showError(msg) {
             const errEl = document.getElementById('authError');
-            errEl.innerText = "Lỗi: " + msg;
+            errEl.innerText = msg;
             errEl.classList.remove('hidden');
         }
 
@@ -482,7 +508,11 @@
                 e.target.reset();
                 showToast("Đã thêm!", "success");
                 checkBudgetWarning(category, amount); // Check after adding
-            } catch (err) { console.error(err); showToast("Lỗi: " + err.message, "error"); } 
+            } catch (err) { 
+                console.error(err); 
+                if (err.code === 'permission-denied') alert("Lỗi ghi dữ liệu: Vui lòng kiểm tra Firestore Rules!");
+                else showToast("Lỗi: " + err.message, "error"); 
+            } 
             finally { btn.disabled = false; btn.innerHTML = `<span>Thêm Giao Dịch</span>`; }
         };
 
