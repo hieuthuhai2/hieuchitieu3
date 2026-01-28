@@ -14,19 +14,20 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <!-- SheetJS (Excel) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     
     <!-- FIREBASE INIT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, setDoc, getDoc, writeBatch, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         window.isFirebaseReady = false;
-
         try {
             // CẤU HÌNH
             const hardcodedConfig = {
-                apiKey: "AIzaSyADN0-ME1iLd2cKCaSQ6gg-xCuYzqLVOuk",
+                apiKey: "", // API Key sẽ được môi trường cung cấp hoặc sử dụng custom config
                 authDomain: "quanlychitieu-43b93.firebaseapp.com",
                 projectId: "quanlychitieu-43b93",
                 storageBucket: "quanlychitieu-43b93.firebasestorage.app",
@@ -49,7 +50,7 @@
                 window.db = getFirestore(app);
                 window.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 
-                // Expose
+                // Expose functions
                 window.signInWithEmailAndPassword = signInWithEmailAndPassword;
                 window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
                 window.signOut = signOut;
@@ -64,261 +65,347 @@
                 window.onSnapshot = onSnapshot;
                 window.setDoc = setDoc;
                 window.getDoc = getDoc;
+                window.writeBatch = writeBatch;
+                window.query = query;
+                window.where = where;
+                window.getDocs = getDocs;
                 
                 window.isFirebaseReady = true;
                 console.log("Firebase Connected");
             }
         } catch (e) {
             console.error("Firebase Error:", e);
-            alert("Lỗi cấu hình: " + e.message);
         }
     </script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        
-        /* TĂNG PADDING TOP CHO DYNAMIC ISLAND */
-        .safe-top-padding {
-            padding-top: max(5rem, env(safe-area-inset-top) + 2rem);
-        }
-
-        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-        .input-field { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; width: 100%; transition: all 0.2s; font-size: 16px; }
-        .input-field:focus { border-color: #3b82f6; outline: none; ring: 2px solid #3b82f6; }
-        th { background-color: #f1f5f9; text-align: left; padding: 12px; font-weight: 600; color: #475569; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
-        .budget-row:hover { background-color: #f8fafc; }
-        .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(2px); }
-        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 24px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1); }
-        #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #333; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 100; left: 50%; bottom: 30px; font-size: 14px; opacity: 0; transition: opacity 0.5s, bottom 0.5s; }
+        .safe-top-padding { padding-top: max(5rem, env(safe-area-inset-top) + 2rem); }
+        .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border: 1px solid #f1f5f9; }
+        .input-field { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; width: 100%; transition: all 0.2s; font-size: 16px; }
+        .input-field:focus { border-color: #3b82f6; outline: none; ring: 2px solid #bfdbfe; }
+        .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 24px; border: 1px solid #e2e8f0; width: 90%; max-width: 500px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        #toast { visibility: hidden; min-width: 250px; margin-left: -125px; background-color: #1e293b; color: #fff; text-align: center; border-radius: 50px; padding: 12px 24px; position: fixed; z-index: 100; left: 50%; bottom: 30px; font-size: 14px; opacity: 0; transition: opacity 0.3s, bottom 0.3s; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
         #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
-        #toast.success { background-color: #10b981; }
-        #toast.error { background-color: #ef4444; }
-        #toast.info { background-color: #3b82f6; }
-        .auth-status { font-size: 13px; padding: 4px 12px; border-radius: 20px; display: inline-flex; items-center; gap: 6px; }
+        .auth-status { font-size: 13px; padding: 6px 16px; border-radius: 20px; display: inline-flex; items-center; gap: 6px; font-weight: 500; transition: all 0.2s; }
         .auth-guest { background: #f1f5f9; color: #64748b; }
-        .auth-user { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        .auth-user { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* FIX: Sử dụng CSS chuẩn thay vì @apply để đảm bảo chạy trên mọi trình duyệt */
+        .type-btn {
+            flex: 1;
+            padding: 8px 0;
+            text-align: center;
+            border-radius: 9999px; /* Rounded Full */
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        .type-btn.active-income { background-color: #dcfce7; color: #166534; border: 1px solid #86efac; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .type-btn.active-expense { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .type-btn.inactive { background-color: transparent; color: #64748b; border: 1px solid transparent; }
     </style>
 </head>
-<body class="px-4 pb-20 safe-top-padding">
+<body class="px-4 pb-20 safe-top-padding text-slate-800 bg-slate-50">
+
     <div class="max-w-6xl mx-auto">
         <!-- HEADER -->
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div>
-                <div class="flex items-center gap-2">
-                    <h1 class="text-2xl font-bold text-slate-800">📊 Quản Lý Chi Tiêu</h1>
-                    <button onclick="openSettings()" class="text-slate-400 hover:text-slate-600 p-1 bg-white rounded-full shadow-sm" title="Cài đặt">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-600 text-white p-2 rounded-xl shadow-lg shadow-blue-200">
+                        <i data-lucide="pie-chart" class="w-6 h-6"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-slate-800">Chi Tiêu Pro</h1>
+                    <button onclick="openSettings()" class="text-slate-400 hover:text-slate-600 p-2 bg-white rounded-full shadow-sm border border-slate-100 transition-transform hover:scale-105" title="Cài đặt">
+                        <i data-lucide="settings" class="w-5 h-5"></i>
                     </button>
                 </div>
                 
-                <!-- AUTH STATUS -->
-                <div id="authContainer" class="mt-2 flex items-center gap-2">
-                    <span id="userDisplay" class="auth-status auth-guest">👤 Đang tải...</span>
-                    <button id="btnLogin" onclick="openLoginModal()" class="hidden text-sm text-blue-600 hover:underline font-medium">Đăng nhập</button>
-                    <button id="btnLogout" onclick="handleLogout()" class="hidden text-sm text-red-500 hover:underline">Đăng xuất</button>
+                <div id="authContainer" class="mt-3 flex items-center gap-2">
+                    <span id="userDisplay" class="auth-status auth-guest">
+                        <i data-lucide="user" class="w-3 h-3"></i> Đang tải...
+                    </span>
+                    <button id="btnLogin" onclick="openLoginModal()" class="hidden text-sm text-blue-600 hover:text-blue-700 font-semibold px-2">Đăng nhập</button>
+                    <button id="btnLogout" onclick="handleLogout()" class="hidden text-sm text-red-500 hover:text-red-600 px-2">Đăng xuất</button>
                 </div>
-                <p id="incomeDisplay" class="text-slate-500 mt-1 text-sm font-medium">Ngân sách: ...</p>
             </div>
 
-            <!-- TOOLBAR -->
-            <div class="flex flex-wrap items-center gap-3">
-                <select id="monthFilter" onchange="updateUI()" class="bg-white border border-slate-300 text-slate-700 py-2 px-4 rounded-lg focus:outline-none focus:border-blue-500 text-sm shadow-sm">
-                    <option value="all">Tất cả thời gian</option>
-                </select>
-                <button onclick="copyToGoogleSheets()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium border border-blue-700 shadow-sm">Copy Sheet</button>
-                <button onclick="downloadTemplate()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-lg text-sm font-medium shadow-sm">📂 Tải Mẫu</button>
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="relative">
+                    <select id="monthFilter" onchange="updateUI()" class="appearance-none bg-white border border-slate-200 text-slate-700 py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:border-blue-500 text-sm font-medium shadow-sm cursor-pointer hover:bg-slate-50 transition">
+                        <option value="all">Toàn thời gian</option>
+                    </select>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none"></i>
+                </div>
+                
+                <button onclick="document.getElementById('fileInput').click()" class="bg-white text-slate-600 hover:bg-slate-50 hover:text-green-600 px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 shadow-sm flex items-center gap-2 transition">
+                    <i data-lucide="sheet" class="w-4 h-4"></i> Excel
+                </button>
                 <input type="file" id="fileInput" accept=".xlsx" class="hidden" onchange="appendDataToExcel(this)">
-                <button onclick="document.getElementById('fileInput').click()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm">Nhập Excel</button>
             </div>
         </div>
 
-        <!-- DASHBOARD STATS -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="card p-6 border-l-4 border-green-500">
-                <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider">Tổng Đã Chi</h3>
-                <p id="totalSpent" class="text-2xl font-bold text-slate-800">0đ</p>
-                <p id="filterLabel" class="text-xs text-slate-400 mt-1">...</p>
+        <!-- NEW DASHBOARD STATS (THỐNG KÊ THÁNG) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <!-- Thu Nhập -->
+            <div class="card p-5 border-l-4 border-green-500 relative overflow-hidden group">
+                <div class="absolute right-0 top-0 opacity-5 transform translate-x-4 -translate-y-2 group-hover:scale-110 transition">
+                    <i data-lucide="trending-up" class="w-32 h-32 text-green-600"></i>
+                </div>
+                <div class="relative z-10">
+                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                        <i data-lucide="arrow-up-circle" class="w-3 h-3 text-green-500"></i> Tổng Thu Nhập
+                    </h3>
+                    <p id="statIncome" class="text-2xl font-bold text-slate-800 mt-1">0đ</p>
+                    <p class="text-xs text-slate-400 mt-1" id="labelIncome">Tháng này</p>
+                </div>
             </div>
-            <div class="card p-6 border-l-4 border-blue-500">
-                <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider">Số Dư Còn Lại</h3>
-                <p id="totalRemaining" class="text-2xl font-bold text-blue-600">0đ</p>
+
+            <!-- Chi Tiêu -->
+            <div class="card p-5 border-l-4 border-red-500 relative overflow-hidden group">
+                <div class="absolute right-0 top-0 opacity-5 transform translate-x-4 -translate-y-2 group-hover:scale-110 transition">
+                    <i data-lucide="trending-down" class="w-32 h-32 text-red-600"></i>
+                </div>
+                <div class="relative z-10">
+                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                        <i data-lucide="arrow-down-circle" class="w-3 h-3 text-red-500"></i> Tổng Chi Tiêu
+                    </h3>
+                    <p id="statExpense" class="text-2xl font-bold text-slate-800 mt-1">0đ</p>
+                    <p class="text-xs text-slate-400 mt-1" id="labelExpense">Tháng này</p>
+                </div>
             </div>
-            <div class="card p-6 border-l-4 border-yellow-500">
-                <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider">Tiến độ chi tiêu</h3>
-                <p id="spendingRate" class="text-2xl font-bold text-slate-800">0%</p>
+
+            <!-- Số Dư -->
+            <div class="card p-5 border-l-4 border-blue-500 relative overflow-hidden group">
+                <div class="absolute right-0 top-0 opacity-5 transform translate-x-4 -translate-y-2 group-hover:scale-110 transition">
+                    <i data-lucide="wallet" class="w-32 h-32 text-blue-600"></i>
+                </div>
+                <div class="relative z-10">
+                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                        <i data-lucide="scale" class="w-3 h-3 text-blue-500"></i> Số Dư Thực Tế
+                    </h3>
+                    <p id="statBalance" class="text-2xl font-bold text-blue-600 mt-1">0đ</p>
+                    <p class="text-xs text-slate-400 mt-1">Kế hoạch + Thu - Chi</p>
+                </div>
             </div>
         </div>
 
         <!-- MAIN CONTENT -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2 space-y-8">
-                <!-- BUDGET TABLE -->
-                <div class="card overflow-hidden">
-                    <div class="p-4 border-b bg-slate-50 font-bold text-slate-700 flex justify-between items-center">
-                        <span>Tình Trạng Ngân Sách</span>
-                        <span class="text-xs font-normal text-slate-500 bg-white px-2 py-1 rounded border">Cảnh báo > 90%</span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left">
-                            <thead>
-                                <tr>
-                                    <th class="w-[40%]">Hạng mục</th>
-                                    <th class="w-[20%]">Ngân sách</th>
-                                    <th class="w-[20%]">Đã chi</th>
-                                    <th class="w-[20%]">Còn lại</th>
-                                </tr>
-                            </thead>
-                            <tbody id="budgetBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- ADD TRANSACTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- ADD TRANSACTION FORM -->
                 <div class="card p-6">
-                    <h2 class="text-lg font-bold mb-4 text-slate-800">Thêm Giao Dịch Mới</h2>
-                    <form id="transactionForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-5 h-5 text-blue-600"></i> Thêm Giao Dịch
+                        </h2>
+                        <!-- Type Switcher - Fully Rounded -->
+                        <div class="flex bg-slate-100 rounded-full p-1 w-48 shadow-inner">
+                            <div onclick="switchType('expense')" id="btnTypeExpense" class="type-btn active-expense">Chi Tiêu</div>
+                            <div onclick="switchType('income')" id="btnTypeIncome" class="type-btn inactive">Thu Nhập</div>
+                        </div>
+                    </div>
+
+                    <form id="transactionForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Input ẩn để lưu loại giao dịch -->
+                        <input type="hidden" id="transType" value="expense">
+
                         <div class="md:col-span-2"> 
                             <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Nội dung</label>
-                            <input type="text" id="desc" class="input-field" placeholder="Ví dụ: Ăn trưa..." required>
+                            <input type="text" id="desc" class="input-field" placeholder="Ví dụ: Ăn trưa, Nhận lương..." required>
                         </div>
-                        <div class="relative">
-                            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Số tiền (đ)</label>
-                            <input type="number" id="amount" class="input-field" placeholder="0" required autocomplete="off" inputmode="numeric" pattern="[0-9]*">
-                            <div id="amountSuggestions" class="absolute z-20 w-full bg-white border border-slate-200 rounded-lg shadow-xl mt-1 hidden max-h-48 overflow-y-auto"></div>
-                        </div>
+                        
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Phân loại</label>
-                            <select id="category" class="input-field">
-                                <!-- JS sẽ điền options vào đây -->
+                            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Số tiền (đ)</label>
+                            <input type="number" id="amount" class="input-field font-bold text-slate-700" placeholder="0" required autocomplete="off" inputmode="numeric">
+                        </div>
+                        
+                        <!-- Category (Chỉ hiện khi là Expense) -->
+                        <div id="categoryContainer">
+                            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Lấy từ Quỹ</label>
+                            <select id="category" class="input-field bg-white">
+                                <!-- JS sẽ điền options -->
                             </select>
                         </div>
-                        <div class="md:col-span-4 mt-2">
-                            <button type="submit" id="btnAdd" class="w-full bg-slate-800 text-white py-3 rounded-lg hover:bg-slate-700 transition font-semibold shadow-lg flex justify-center items-center gap-2">
-                                <span>Thêm Giao Dịch</span>
+
+                        <!-- Date (Optional, default now) -->
+                        <div class="hidden">
+                            <!-- Could add date picker here if needed later -->
+                        </div>
+
+                        <div class="md:col-span-2 mt-2">
+                            <button type="submit" id="btnAdd" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-slate-200 transition active:scale-95 flex justify-center items-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> Lưu Giao Dịch
                             </button>
                         </div>
                     </form>
                 </div>
 
-                <!-- HISTORY -->
-                <div class="card p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-bold text-slate-800">Lịch Sử Chi Tiêu</h2>
-                        <button onclick="clearAllData()" class="text-xs text-red-500 hover:text-red-700 hover:underline">Xóa tất cả</button>
+                <!-- BUDGET PROGRESS BARS -->
+                <div class="card overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                        <span class="font-bold text-slate-700 text-sm">Tình Trạng Các Quỹ (Dựa trên Thu Nhập Kế Hoạch)</span>
+                        <div class="text-xs bg-white border px-2 py-1 rounded text-slate-500 flex items-center gap-1 cursor-help" title="Ngân sách quỹ = Tổng thu nhập cài đặt * Tỷ lệ %">
+                            <i data-lucide="info" class="w-3 h-3"></i> Kế hoạch: <span id="plannedIncomeDisplay" class="font-bold">...</span>
+                        </div>
                     </div>
-                    <div class="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                        <table class="w-full text-sm">
-                            <thead class="sticky top-0 bg-white shadow-sm z-10">
-                                <tr class="text-slate-400 border-b">
-                                    <th class="bg-white px-0 py-2">Ngày</th>
-                                    <th class="bg-white px-0 py-2">Nội dung</th>
-                                    <th class="bg-white px-0 py-2 text-right">Số tiền</th>
-                                    <th class="bg-white px-0 py-2 text-right">#</th>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+                                <tr>
+                                    <th class="w-[45%] py-3 px-4 font-semibold">Quỹ chi tiêu</th>
+                                    <th class="w-[20%] py-3 px-2 font-semibold text-right">Hạn mức</th>
+                                    <th class="w-[20%] py-3 px-2 font-semibold text-right">Đã chi</th>
+                                    <th class="w-[15%] py-3 px-4 font-semibold text-right">Còn lại</th>
                                 </tr>
                             </thead>
+                            <tbody id="budgetBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- HISTORY LIST -->
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="history" class="w-5 h-5 text-slate-400"></i> Lịch Sử
+                        </h2>
+                    </div>
+                    <div class="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                        <table class="w-full text-sm">
                             <tbody id="historyBody"></tbody>
                         </table>
+                        <div id="emptyHistory" class="hidden text-center py-8 text-slate-400">
+                            <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 opacity-20"></i>
+                            <p>Chưa có giao dịch nào trong tháng này.</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- RIGHT SIDEBAR -->
-            <div class="space-y-8">
+            <div class="space-y-6">
+                <!-- Chart -->
                 <div class="card p-6 flex flex-col items-center">
-                    <h2 class="text-lg font-bold mb-4 text-slate-800 text-center">Phân Bổ Chi Tiêu</h2>
-                    <div class="w-full h-[300px] relative">
+                    <h2 class="text-sm font-bold mb-4 text-slate-500 uppercase tracking-wider w-full text-left">Phân Bổ Chi Tiêu</h2>
+                    <div class="w-full h-[250px] relative">
                         <canvas id="budgetChart"></canvas>
                     </div>
                 </div>
 
-                <div class="card p-6 bg-slate-800 text-white shadow-xl">
-                    <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
-                        <span>💡 Trạng thái đồng bộ</span>
+                <!-- Sync Status -->
+                <div class="card p-5 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-xl border-0">
+                    <h2 class="text-base font-bold mb-2 flex items-center gap-2">
+                        <i data-lucide="cloud" class="w-4 h-4"></i> Trạng thái
                     </h2>
-                    <p id="syncStatus" class="text-sm opacity-90 leading-relaxed mb-2">Đang kết nối...</p>
-                    <ul class="text-xs space-y-2 opacity-75">
-                        <li>• Hãy chọn <b>"Duy trì đăng nhập"</b> để không phải đăng nhập lại mỗi lần mở app.</li>
-                        <li>• Trên iPhone: Bấm Share -> Thêm vào MH Chính.</li>
-                    </ul>
+                    <p id="syncStatus" class="text-sm opacity-90 leading-relaxed mb-3">Đang kết nối...</p>
+                    <div class="text-xs space-y-1.5 opacity-60">
+                        <p>• Dữ liệu được lưu trữ an toàn trên đám mây.</p>
+                        <p>• Đăng nhập để đồng bộ giữa các thiết bị.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL SETTINGS (UPDATED FOR DYNAMIC FUNDS) -->
+    <!-- MODAL SETTINGS (UPDATED WITH RESET & INCOME PLAN) -->
     <div id="settingsModal" class="modal">
         <div class="modal-content shadow-2xl animate-[fadeIn_0.2s_ease-out] max-w-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Cài Đặt Hệ Thống</h2>
-                <button onclick="closeSettings()" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-5 h-5"></i> Cài Đặt Hệ Thống
+                </h2>
+                <button onclick="closeSettings()" class="text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
             </div>
             
-            <div class="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
-                <!-- 1. Income -->
-                <div>
-                    <label class="block text-sm font-semibold mb-2 text-slate-700">1. Tổng thu nhập (VNĐ)</label>
-                    <input type="number" id="settingIncome" class="input-field text-lg font-bold text-blue-600">
+            <div class="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                <!-- 1. Income Plan -->
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <label class="block text-sm font-bold mb-2 text-blue-800">1. Thu Nhập Kế Hoạch (Vốn đầu tháng)</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="settingIncome" class="input-field text-lg font-bold text-blue-600 bg-white" placeholder="VNĐ">
+                    </div>
+                    <p class="text-xs text-blue-500 mt-2">
+                        * Số tiền này sẽ được dùng làm "Vốn ban đầu" để tính số dư thực tế và phân bổ hạn mức cho các quỹ.
+                    </p>
                 </div>
 
-                <!-- 2. Dynamic Budget Ratios (NEW) -->
-                <div class="border-t pt-4">
+                <!-- 2. Funds Config -->
+                <div>
                     <div class="flex justify-between items-center mb-3">
-                        <label class="block text-sm font-semibold text-slate-700">2. Quản lý Quỹ (Tên & Tỷ lệ)</label>
-                        <span id="totalPercentDisplay" class="text-xs font-bold bg-slate-100 px-2 py-1 rounded">Tổng: 100%</span>
+                        <label class="block text-sm font-bold text-slate-700">2. Cấu hình Quỹ Chi Tiêu</label>
+                        <span id="totalPercentDisplay" class="text-xs font-bold bg-slate-100 px-2 py-1 rounded border">Tổng: 100%</span>
                     </div>
-                    
-                    <!-- Header -->
-                    <div class="grid grid-cols-12 gap-2 text-xs font-bold text-slate-400 mb-2 px-1">
+                    <div class="grid grid-cols-12 gap-2 text-[10px] font-bold text-slate-400 mb-2 uppercase px-1">
                         <div class="col-span-1">Màu</div>
-                        <div class="col-span-5">Tên quỹ</div>
-                        <div class="col-span-3 text-center">Tỷ lệ (%)</div>
-                        <div class="col-span-3 text-right">Xóa</div>
+                        <div class="col-span-6">Tên quỹ</div>
+                        <div class="col-span-3 text-center">Tỷ lệ %</div>
+                        <div class="col-span-2 text-right">Xóa</div>
                     </div>
-
-                    <div id="budgetListContainer" class="space-y-2">
-                        <!-- JS sẽ render danh sách quỹ vào đây -->
-                    </div>
-
-                    <button onclick="addNewFundRow()" class="mt-3 text-sm text-blue-600 font-bold hover:bg-blue-50 px-3 py-2 rounded border border-dashed border-blue-300 w-full flex justify-center items-center gap-2">
-                        <span>+ Thêm quỹ mới</span>
+                    <div id="budgetListContainer" class="space-y-2"></div>
+                    <button onclick="addNewFundRow()" class="mt-3 text-sm text-blue-600 font-bold hover:bg-blue-50 px-3 py-2.5 rounded-lg border border-dashed border-blue-300 w-full flex justify-center items-center gap-2 transition">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Thêm quỹ mới
                     </button>
                 </div>
 
-                <!-- 3. Webhook -->
-                <div class="border-t pt-4">
-                    <label class="block text-sm font-semibold mb-2 text-slate-700">3. Webhook URL (Make/Integromat)</label>
-                    <input type="text" id="settingWebhook" class="input-field text-sm font-mono" placeholder="https://hook.make.com/...">
+                <!-- 3. Danger Zone (Reset) -->
+                <div class="border-t pt-6 mt-6">
+                    <label class="block text-sm font-bold mb-3 text-red-600 uppercase tracking-wide">3. Khởi động lại (Reset)</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <button onclick="resetCurrentMonth()" class="px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition text-sm font-medium flex items-center justify-center gap-2">
+                            <i data-lucide="calendar-x" class="w-4 h-4"></i> Xóa dữ liệu tháng này
+                        </button>
+                        <button onclick="clearAllData()" class="px-4 py-3 bg-red-50 border border-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition text-sm font-medium flex items-center justify-center gap-2">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> Xóa toàn bộ dữ liệu
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2 italic">Hành động này không thể hoàn tác.</p>
                 </div>
             </div>
 
             <div class="flex gap-3 justify-end mt-6 border-t pt-4">
-                <button onclick="closeSettings()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Hủy</button>
-                <button onclick="saveSettings()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow font-semibold">Lưu Thay Đổi</button>
+                <button onclick="closeSettings()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl font-medium transition">Hủy</button>
+                <button onclick="saveSettings()" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 font-semibold transition flex items-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i> Lưu Thay Đổi
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL LOGIN/REGISTER (UPDATED REMEMBER ME) -->
+    <!-- MODAL LOGIN -->
     <div id="loginModal" class="modal">
-        <div class="modal-content shadow-2xl">
+        <div class="modal-content shadow-2xl max-w-sm">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-slate-800">Đăng nhập / Đăng ký</h2>
+                <h2 class="text-xl font-bold text-slate-800">Đăng nhập</h2>
                 <button onclick="document.getElementById('loginModal').style.display='none'" class="text-2xl text-slate-400">&times;</button>
             </div>
             <div class="space-y-4">
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" id="authEmail" class="input-field" placeholder="email@example.com"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Mật khẩu</label><input type="password" id="authPassword" class="input-field" placeholder="******"></div>
-                
-                <!-- REMEMBER ME CHECKBOX -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                    <input type="email" id="authEmail" class="input-field" placeholder="email@example.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Mật khẩu</label>
+                    <input type="password" id="authPassword" class="input-field" placeholder="******">
+                </div>
                 <div class="flex items-center gap-2 mt-2">
                     <input type="checkbox" id="authRemember" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked>
-                    <label for="authRemember" class="text-sm text-slate-600">Duy trì đăng nhập (Không hỏi lại lần sau)</label>
+                    <label for="authRemember" class="text-sm text-slate-600">Duy trì đăng nhập</label>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-3 mt-6">
-                <button onclick="handleLogin()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition">Đăng Nhập</button>
-                <button onclick="handleRegister()" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 py-2 rounded-lg font-medium transition">Đăng Ký Mới</button>
+                <button onclick="handleLogin()" class="bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition">Đăng Nhập</button>
+                <button onclick="handleRegister()" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 py-2.5 rounded-xl font-medium transition">Đăng Ký</button>
             </div>
             <p id="authError" class="text-red-500 text-sm mt-3 text-center hidden"></p>
         </div>
@@ -327,6 +414,11 @@
     <!-- TOAST -->
     <div id="toast">Thông báo</div>
 
+    <script>
+        // --- LUCIDE ICONS INIT ---
+        lucide.createIcons();
+    </script>
+
     <script type="module">
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
@@ -334,6 +426,8 @@
         let unsubscribeSettings = null;
 
         window.onload = function() {
+            lucide.createIcons(); // Re-init icons
+            
             if (!window.isFirebaseReady) {
                 console.log("Offline Mode");
                 initOfflineMode();
@@ -350,35 +444,34 @@
 
                 if (user) {
                     // LOGGED IN
-                    userDisplay.innerHTML = `☁️ ${user.email}`;
+                    userDisplay.innerHTML = `<i data-lucide="user" class="w-3 h-3"></i> ${user.email.split('@')[0]}`;
                     userDisplay.className = 'auth-status auth-user';
                     btnLogin.classList.add('hidden');
                     btnLogout.classList.remove('hidden');
-                    syncStatus.innerText = "✅ Đã đồng bộ.";
-                    syncStatus.className = "text-sm text-green-600 mb-2 font-medium";
+                    syncStatus.innerHTML = "<span class='text-green-400 font-bold'>● Online</span> • Đã đồng bộ dữ liệu.";
                     
                     showToast(`Xin chào ${user.email}`, 'info');
                     await loadDataFromCloud(user.uid);
                 } else {
                     // LOGGED OUT
-                    userDisplay.innerHTML = `👤 Khách`;
+                    userDisplay.innerHTML = `<i data-lucide="user" class="w-3 h-3"></i> Khách`;
                     userDisplay.className = 'auth-status auth-guest';
                     btnLogin.classList.remove('hidden');
                     btnLogout.classList.add('hidden');
-                    syncStatus.innerText = "⚠️ Chưa đăng nhập.";
-                    syncStatus.className = "text-sm text-yellow-600 mb-2";
+                    syncStatus.innerHTML = "<span class='text-yellow-400 font-bold'>● Local</span> • Dữ liệu chỉ lưu trên máy này.";
 
                     if (unsubscribeTrans) unsubscribeTrans();
                     if (unsubscribeSettings) unsubscribeSettings();
                     
                     loadDataFromLocal();
                 }
+                lucide.createIcons();
             });
+            
+            window.myChart = null;
         };
 
         function initOfflineMode() {
-            document.getElementById('userDisplay').innerHTML = `👤 Offline`;
-            document.getElementById('syncStatus').innerText = "Offline Mode.";
             loadDataFromLocal();
         }
 
@@ -389,28 +482,26 @@
             const transRef = window.collection(window.db, 'artifacts', window.appId, 'users', userId, 'transactions');
             if (unsubscribeTrans) unsubscribeTrans();
             unsubscribeTrans = window.onSnapshot(transRef, (snapshot) => {
-                transactions = [];
-                snapshot.forEach(doc => { transactions.push({ id: doc.id, ...doc.data() }); });
-                transactions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                window.transactions = [];
+                snapshot.forEach(doc => { window.transactions.push({ id: doc.id, ...doc.data() }); });
+                window.transactions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                 updateMonthFilterOptions();
                 updateUI();
             });
 
-            // Settings (Listen for budgetRatios changes)
+            // Settings
             const settingsRef = window.doc(window.db, 'artifacts', window.appId, 'users', userId, 'settings', 'config');
             if (unsubscribeSettings) unsubscribeSettings();
             unsubscribeSettings = window.onSnapshot(settingsRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    if (data.totalIncome) totalIncome = data.totalIncome;
-                    if (data.webhookUrl) webhookUrl = data.webhookUrl;
-                    if (data.budgetRatios) currentBudgetRatios = data.budgetRatios; // SYNC DYNAMIC FUNDS
+                    if (data.totalIncome) window.totalIncome = data.totalIncome;
+                    if (data.budgetRatios) window.currentBudgetRatios = data.budgetRatios;
                     updateUI();
                 } else {
                     window.setDoc(settingsRef, { 
-                        totalIncome: 9500000, 
-                        webhookUrl: '',
-                        budgetRatios: defaultBudgetRatios
+                        totalIncome: 10000000, 
+                        budgetRatios: window.defaultBudgetRatios
                     });
                 }
             });
@@ -419,440 +510,474 @@
 
     <script>
         // --- LOGIC ---
-        // Default Funds (Initial State)
-        const defaultBudgetRatios = {
-            fixed: { name: 'Cố định', percent: 0.315, color: '#64748b' },
-            emergency: { name: 'Khẩn cấp', percent: 0.10, color: '#f59e0b' },
-            longterm: { name: 'Đầu tư dài hạn', percent: 0.20, color: '#10b981' },
-            shortterm: { name: 'Đầu tư ngắn hạn', percent: 0.15, color: '#3b82f6' },
-            leisure: { name: 'Giải trí', percent: 0.10, color: '#ec4899' },
-            flex: { name: 'Linh hoạt', percent: 0.135, color: '#8b5cf6' }
+        window.defaultBudgetRatios = {
+            fixed: { name: 'Thiết yếu (55%)', percent: 0.55, color: '#3b82f6' },
+            education: { name: 'Giáo dục (10%)', percent: 0.10, color: '#a855f7' },
+            saving: { name: 'Tiết kiệm (10%)', percent: 0.10, color: '#22c55e' },
+            invest: { name: 'Đầu tư (10%)', percent: 0.10, color: '#f59e0b' },
+            play: { name: 'Hưởng thụ (10%)', percent: 0.10, color: '#ec4899' },
+            charity: { name: 'Cho đi (5%)', percent: 0.05, color: '#64748b' }
         };
 
-        // Mutable State
-        let currentBudgetRatios = JSON.parse(JSON.stringify(defaultBudgetRatios));
-        let transactions = [];
-        let totalIncome = 9500000;
-        let webhookUrl = '';
-        let budgetConfig = {};
+        window.currentBudgetRatios = JSON.parse(JSON.stringify(window.defaultBudgetRatios));
+        window.transactions = [];
+        window.totalIncome = 10000000;
+        window.budgetConfig = {};
 
-        function formatMoney(amount) {
-            return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
-        }
-
+        // UI Helpers
+        function formatMoney(amount) { return new Intl.NumberFormat('vi-VN').format(amount) + 'đ'; }
         function getMonthYear(dateStr) {
             if(!dateStr) return "";
             if(dateStr.length > 10) return dateStr.substring(3, 10); 
             return dateStr.substring(3); 
         }
 
-        function loadDataFromLocal() {
-            try {
-                transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-                totalIncome = parseFloat(localStorage.getItem('totalIncome')) || 9500000;
-                webhookUrl = localStorage.getItem('webhookUrl') || '';
-                const savedRatios = localStorage.getItem('budgetRatios');
-                if (savedRatios) currentBudgetRatios = JSON.parse(savedRatios);
-                updateMonthFilterOptions();
-                updateUI();
-            } catch (e) { console.error("Lỗi đọc LocalStorage", e); }
-        }
-
-        // --- AUTH ---
-        function openLoginModal() {
-            document.getElementById('loginModal').style.display = 'block';
-            document.getElementById('authError').classList.add('hidden');
-        }
-        async function handleLogin() {
-            if (!window.auth) return alert("Chờ kết nối...");
-            const email = document.getElementById('authEmail').value;
-            const pass = document.getElementById('authPassword').value;
-            const remember = document.getElementById('authRemember').checked;
+        // --- CORE FUNCTIONS ---
+        
+        // 1. Switch Income/Expense
+        window.switchType = function(type) {
+            document.getElementById('transType').value = type;
+            const btnExpense = document.getElementById('btnTypeExpense');
+            const btnIncome = document.getElementById('btnTypeIncome');
+            const catContainer = document.getElementById('categoryContainer');
             
-            if(!email || !pass) return showError("Vui lòng nhập đủ thông tin");
-            
-            try {
-                // SET PERSISTENCE BASED ON CHECKBOX
-                const persistence = remember ? window.browserLocalPersistence : window.browserSessionPersistence;
-                await window.setPersistence(window.auth, persistence);
-                
-                await window.signInWithEmailAndPassword(window.auth, email, pass);
-                document.getElementById('loginModal').style.display = 'none';
-            } catch (error) { showError(error.message); }
-        }
-        async function handleRegister() {
-            // Register flow (persistence default is usually Local)
-            const email = document.getElementById('authEmail').value;
-            const pass = document.getElementById('authPassword').value;
-            if(!email || !pass) return showError("Vui lòng nhập đủ thông tin");
-            try {
-                await window.createUserWithEmailAndPassword(window.auth, email, pass);
-                document.getElementById('loginModal').style.display = 'none';
-                showToast("Đăng ký thành công!", "success");
-            } catch (error) { showError(error.message); }
-        }
-        async function handleLogout() {
-            if(confirm("Đăng xuất?")) await window.signOut(window.auth);
-        }
-        function showError(msg) {
-            const errEl = document.getElementById('authError');
-            errEl.innerText = msg; errEl.classList.remove('hidden');
-        }
-
-        // --- UI RENDER & LOGIC ---
-        function calculateBudgets() {
-            document.getElementById('incomeDisplay').innerText = `Ngân sách: ${formatMoney(totalIncome)}`;
-            budgetConfig = {};
-            // Build Budget Config from Dynamic Ratios
-            for (let key in currentBudgetRatios) {
-                budgetConfig[key] = { ...currentBudgetRatios[key], budget: totalIncome * currentBudgetRatios[key].percent };
+            if (type === 'expense') {
+                btnExpense.className = 'type-btn active-expense';
+                btnIncome.className = 'type-btn inactive';
+                catContainer.style.display = 'block';
+                document.getElementById('btnAdd').classList.remove('bg-green-700');
+                document.getElementById('btnAdd').classList.add('bg-slate-800');
+            } else {
+                btnExpense.className = 'type-btn inactive';
+                btnIncome.className = 'type-btn active-income';
+                catContainer.style.display = 'none';
+                document.getElementById('btnAdd').classList.remove('bg-slate-800');
+                document.getElementById('btnAdd').classList.add('bg-green-700');
             }
-            // Populate Category Select
+        }
+
+        function calculateBudgets() {
+            document.getElementById('plannedIncomeDisplay').innerText = formatMoney(window.totalIncome);
+            window.budgetConfig = {};
+            for (let key in window.currentBudgetRatios) {
+                window.budgetConfig[key] = { 
+                    ...window.currentBudgetRatios[key], 
+                    budget: window.totalIncome * window.currentBudgetRatios[key].percent 
+                };
+            }
+            
+            // Populate Select Options
             const catSelect = document.getElementById('category');
-            catSelect.innerHTML = '';
-            for (let key in currentBudgetRatios) {
-                const opt = document.createElement('option');
-                opt.value = key;
-                opt.innerText = `${currentBudgetRatios[key].name} (${(currentBudgetRatios[key].percent * 100).toFixed(1)}%)`;
-                catSelect.appendChild(opt);
+            if (catSelect.options.length === 0 || catSelect.dataset.needsUpdate) {
+                catSelect.innerHTML = '';
+                for (let key in window.currentBudgetRatios) {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.innerText = window.currentBudgetRatios[key].name;
+                    catSelect.appendChild(opt);
+                }
+                catSelect.dataset.needsUpdate = "";
             }
         }
 
         function updateUI() {
             calculateBudgets();
-            const historyBody = document.getElementById('historyBody');
-            const budgetBody = document.getElementById('budgetBody');
             const filterVal = document.getElementById('monthFilter').value;
-            let displayList = [...transactions].reverse();
-            if (filterVal !== 'all') displayList = displayList.filter(t => getMonthYear(t.date) === filterVal);
-            if (filterVal !== 'all') document.getElementById('filterLabel').innerText = `Dữ liệu Tháng ${filterVal}`;
-            else document.getElementById('filterLabel').innerText = `Toàn thời gian`;
+            let displayList = [...window.transactions].reverse();
+            
+            // Filter by Month
+            if (filterVal !== 'all') {
+                displayList = displayList.filter(t => getMonthYear(t.date) === filterVal);
+                document.getElementById('labelIncome').innerText = `Tháng ${filterVal}`;
+                document.getElementById('labelExpense').innerText = `Tháng ${filterVal}`;
+            } else {
+                document.getElementById('labelIncome').innerText = "Toàn thời gian";
+                document.getElementById('labelExpense').innerText = "Toàn thời gian";
+            }
 
-            const categorySpent = {}; // Init dynamic keys
-            for(let k in currentBudgetRatios) categorySpent[k] = 0;
-            
-            let totalSpent = 0;
+            // Calc Stats
+            let actualIncome = 0;
+            let actualExpense = 0;
+            const categorySpent = {}; // Only for Expenses
+            for(let k in window.currentBudgetRatios) categorySpent[k] = 0;
+
+            const historyBody = document.getElementById('historyBody');
             historyBody.innerHTML = '';
-            
+
+            if (displayList.length === 0) {
+                document.getElementById('emptyHistory').classList.remove('hidden');
+            } else {
+                document.getElementById('emptyHistory').classList.add('hidden');
+            }
+
             displayList.forEach((t) => {
                 const val = parseFloat(t.amount) || 0;
-                // If category exists, add to it. If deleted, maybe add to 'other' or ignore? 
-                // Let's just render it.
-                if (categorySpent[t.category] !== undefined) categorySpent[t.category] += val;
+                const isIncome = t.type === 'income';
                 
-                totalSpent += val;
-                const originalIndex = transactions.indexOf(t);
-                const deleteParam = window.currentUser ? `'${t.id}'` : originalIndex;
+                if (isIncome) {
+                    actualIncome += val;
+                } else {
+                    actualExpense += val;
+                    // Track expense category
+                    if (t.category && categorySpent[t.category] !== undefined) {
+                        categorySpent[t.category] += val;
+                    }
+                }
+
+                // Render History Row
+                const deleteParam = window.currentUser ? `'${t.id}'` : window.transactions.indexOf(t);
                 const [datePart, timePart] = t.date.split(' ');
                 
-                // Handle deleted category name
-                const catName = budgetConfig[t.category] ? budgetConfig[t.category].name : `(Quỹ cũ: ${t.category})`;
-                const catColor = budgetConfig[t.category] ? '' : 'bg-gray-100 text-gray-400';
+                const catName = isIncome ? 'Thu nhập' : (window.budgetConfig[t.category] ? window.budgetConfig[t.category].name : 'Chi tiêu');
+                const badgeClass = isIncome ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-slate-100 text-slate-500 border border-slate-200';
+                const moneyClass = isIncome ? 'text-green-600' : 'text-red-500';
+                const sign = isIncome ? '+' : '-';
+                const icon = isIncome ? 'arrow-up-right' : 'arrow-down-left';
 
                 const row = document.createElement('tr');
+                row.className = 'border-b border-slate-50 hover:bg-slate-50/50 transition';
                 row.innerHTML = `
-                    <td class="py-3 text-slate-500 text-xs">
-                        <div class="font-medium">${datePart}</div>
-                        <div class="text-[10px] opacity-75">${timePart || ''}</div>
+                    <td class="py-3 pl-2">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-full ${isIncome ? 'bg-green-50' : 'bg-red-50'}">
+                                <i data-lucide="${icon}" class="w-4 h-4 ${isIncome ? 'text-green-500' : 'text-red-400'}"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-slate-700">${t.desc}</div>
+                                <div class="text-[11px] text-slate-400 flex items-center gap-1">
+                                    <span>${datePart}</span>
+                                    <span class="text-xs">•</span>
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] ${badgeClass}">${catName}</span>
+                                </div>
+                            </div>
+                        </div>
                     </td>
-                    <td class="py-3 font-medium">
-                        <div class="truncate max-w-[120px]" title="${t.desc}">${t.desc}</div>
-                        <span class="text-[10px] bg-slate-100 px-1 rounded text-slate-500 ${catColor}">${catName}</span>
+                    <td class="py-3 text-right pr-2">
+                        <div class="font-bold ${moneyClass}">${sign}${formatMoney(val)}</div>
                     </td>
-                    <td class="py-3 text-right font-bold text-red-500">-${formatMoney(val)}</td>
-                    <td class="py-3 text-right">
-                        <button onclick="handleDelete(${deleteParam})" class="text-slate-300 hover:text-red-500 p-1">✕</button>
+                    <td class="py-3 text-right pr-2 w-10">
+                        <button onclick="handleDelete(${deleteParam})" class="text-slate-300 hover:text-red-500 p-1.5 rounded hover:bg-red-50 transition">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
                     </td>
                 `;
                 historyBody.appendChild(row);
             });
+            lucide.createIcons();
 
+            // Update Dashboard Stats (UPDATED BALANCE LOGIC)
+            document.getElementById('statIncome').innerText = formatMoney(actualIncome);
+            document.getElementById('statExpense').innerText = formatMoney(actualExpense);
+            
+            // LOGIC MỚI: Số dư = (Thu Nhập Kế Hoạch từ Cài đặt) + (Thu nhập thực tế) - (Chi tiêu thực tế)
+            // Nếu filter theo tháng, ta giả định Thu Nhập Kế Hoạch là thu nhập của tháng đó.
+            const plannedBase = window.totalIncome || 0;
+            const balance = plannedBase + actualIncome - actualExpense;
+            
+            const balEl = document.getElementById('statBalance');
+            balEl.innerText = formatMoney(balance);
+            balEl.className = `text-2xl font-bold mt-1 ${balance >= 0 ? 'text-blue-600' : 'text-red-600'}`;
+
+            // Update Budget Bars (Only Expenses vs Planned Budget)
+            const budgetBody = document.getElementById('budgetBody');
             budgetBody.innerHTML = '';
-            for (const key in budgetConfig) {
-                const conf = budgetConfig[key];
+            for (const key in window.budgetConfig) {
+                const conf = window.budgetConfig[key];
                 const spent = categorySpent[key] || 0;
                 const remaining = conf.budget - spent;
                 const percent = (spent / conf.budget) * 100;
+                
                 let barColor = 'bg-blue-500';
-                let statusClass = 'text-green-600';
-                if (percent >= 90) { barColor = 'bg-red-500'; statusClass = 'text-red-600 font-bold'; }
-                else if (percent >= 75) { barColor = 'bg-yellow-500'; statusClass = 'text-yellow-600'; }
+                let textColor = 'text-green-600';
+                if (percent >= 100) { barColor = 'bg-red-600'; textColor = 'text-red-600'; }
+                else if (percent >= 80) { barColor = 'bg-yellow-500'; textColor = 'text-yellow-600'; }
+
                 const row = document.createElement('tr');
-                row.className = 'budget-row';
                 row.innerHTML = `
-                    <td>
-                        <div class="font-bold text-slate-700 flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full inline-block" style="background:${conf.color}"></span>
-                            ${conf.name}
+                    <td class="py-3 px-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-1.5 h-8 rounded-full" style="background-color: ${conf.color}"></div>
+                            <div class="flex-1">
+                                <div class="font-bold text-slate-700 text-xs uppercase mb-1">${conf.name}</div>
+                                <div class="w-full bg-slate-100 rounded-full h-2">
+                                    <div class="${barColor} h-2 rounded-full transition-all duration-500" style="width: ${Math.min(percent, 100)}%"></div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2"><div class="h-1.5 rounded-full ${barColor} transition-all duration-500" style="width: ${Math.min(percent, 100)}%"></div></div>
                     </td>
-                    <td class="text-slate-500 text-xs">${formatMoney(conf.budget)}</td>
-                    <td class="text-slate-800 font-medium text-xs">${formatMoney(spent)}</td>
-                    <td class="${statusClass} font-bold text-xs">${formatMoney(remaining)}</td>
+                    <td class="py-3 px-2 text-right text-slate-400 font-medium">${formatMoney(conf.budget)}</td>
+                    <td class="py-3 px-2 text-right text-slate-700 font-bold">${formatMoney(spent)}</td>
+                    <td class="py-3 px-4 text-right ${textColor} font-bold">${formatMoney(remaining)}</td>
                 `;
                 budgetBody.appendChild(row);
             }
-            document.getElementById('totalSpent').innerText = formatMoney(totalSpent);
-            document.getElementById('totalRemaining').innerText = formatMoney(totalIncome - totalSpent);
-            const rate = totalIncome > 0 ? (totalSpent / totalIncome) * 100 : 0;
-            document.getElementById('spendingRate').innerText = rate.toFixed(1) + '%';
-            updateChart(categorySpent);
+
+            renderChart(categorySpent);
         }
 
-        // --- SETTINGS (DYNAMIC FUNDS) ---
-        function openSettings() {
-            document.getElementById('settingIncome').value = totalIncome;
-            document.getElementById('settingWebhook').value = webhookUrl;
-            renderBudgetInputs(); 
-            document.getElementById('settingsModal').style.display = "block";
-        }
-        function closeSettings() { document.getElementById('settingsModal').style.display = "none"; }
-
-        // Local state for settings editing
-        let tempRatios = {}; 
-
-        function renderBudgetInputs() {
-            const container = document.getElementById('budgetListContainer');
-            container.innerHTML = '';
-            // Clone to temp state
-            tempRatios = JSON.parse(JSON.stringify(currentBudgetRatios));
+        function renderChart(dataObj) {
+            const ctx = document.getElementById('budgetChart').getContext('2d');
+            const labels = [];
+            const dataValues = [];
+            const bgColors = [];
             
-            Object.keys(tempRatios).forEach(key => {
-                addFundRowUI(key, tempRatios[key]);
+            for (let key in window.budgetConfig) {
+                labels.push(window.budgetConfig[key].name);
+                dataValues.push(dataObj[key] || 0);
+                bgColors.push(window.budgetConfig[key].color);
+            }
+
+            if (window.myChart) window.myChart.destroy();
+            window.myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: bgColors,
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 10, font: { size: 11 }, padding: 15 } }
+                    },
+                    layout: { padding: 0 }
+                }
             });
-            window.updateTotalPercent();
         }
 
-        function addFundRowUI(key, data) {
-            const container = document.getElementById('budgetListContainer');
-            const percentVal = (data.percent * 100).toFixed(1);
-            const div = document.createElement('div');
-            div.className = "grid grid-cols-12 gap-2 items-center fund-row";
-            div.dataset.key = key;
-            div.innerHTML = `
-                <div class="col-span-1">
-                    <input type="color" class="fund-color w-8 h-8 rounded border p-0 cursor-pointer" value="${data.color}">
-                </div>
-                <div class="col-span-5">
-                    <input type="text" class="fund-name input-field py-1 px-2 text-sm" value="${data.name}" placeholder="Tên quỹ">
-                </div>
-                <div class="col-span-3 relative">
-                    <input type="number" step="0.1" class="fund-percent input-field py-1 px-2 text-sm text-center font-bold" value="${percentVal}" oninput="window.updateTotalPercent()">
-                </div>
-                <div class="col-span-3 text-right">
-                    <button onclick="removeFundRow(this)" class="text-red-500 hover:bg-red-50 p-1 rounded text-xs font-bold px-2 border border-red-200">Xóa</button>
-                </div>
-            `;
-            container.appendChild(div);
-        }
-
-        window.addNewFundRow = function() {
-            const newKey = 'fund_' + Date.now();
-            const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
-            addFundRowUI(newKey, { name: 'Quỹ Mới', percent: 0, color: randomColor });
-        }
-
-        window.removeFundRow = function(btn) {
-            if(confirm("Bạn có chắc muốn xóa quỹ này? Dữ liệu cũ sẽ không bị mất nhưng sẽ không hiển thị tên quỹ.")) {
-                btn.closest('.fund-row').remove();
-                window.updateTotalPercent();
-            }
-        }
-
-        window.updateTotalPercent = function() {
-            const inputs = document.querySelectorAll('.fund-percent');
-            let total = 0;
-            inputs.forEach(inp => total += parseFloat(inp.value || 0));
-            const display = document.getElementById('totalPercentDisplay');
-            display.innerText = `Tổng: ${total.toFixed(1)}%`;
-            if(Math.abs(total - 100) < 0.1) {
-                display.className = "text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded";
-            } else {
-                display.className = "text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded animate-pulse";
-            }
-        }
-        
-        async function saveSettings() {
-            const newIncome = parseFloat(document.getElementById('settingIncome').value);
-            const newWebhook = document.getElementById('settingWebhook').value.trim();
-
-            if (newIncome && newIncome > 0) totalIncome = newIncome;
-            webhookUrl = newWebhook;
-
-            // Reconstruct Ratios
-            const rows = document.querySelectorAll('.fund-row');
-            let newRatios = {};
-            let totalPercent = 0;
-            
-            rows.forEach(row => {
-                const key = row.dataset.key;
-                const name = row.querySelector('.fund-name').value;
-                const color = row.querySelector('.fund-color').value;
-                const percent = parseFloat(row.querySelector('.fund-percent').value);
-                
-                if(!name) return; // Skip empty
-                
-                newRatios[key] = { name, color, percent: percent / 100 };
-                totalPercent += percent;
-            });
-
-            if (Math.abs(totalPercent - 100) > 0.1) {
-                alert(`Tổng phần trăm phải là 100%. Hiện tại: ${totalPercent.toFixed(1)}%`);
-                return;
-            }
-            currentBudgetRatios = newRatios; // Update global
-
-            if (window.currentUser) {
-                try { 
-                    await window.setDoc(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'settings', 'config'), { 
-                        totalIncome: totalIncome, 
-                        webhookUrl: webhookUrl,
-                        budgetRatios: currentBudgetRatios // Sync new structure
-                    }); 
-                    showToast("Đã đồng bộ!", "success"); 
-                } 
-                catch(e) { showToast("Lỗi lưu Cloud: " + e.message, "error"); }
-            } else {
-                localStorage.setItem('totalIncome', totalIncome);
-                localStorage.setItem('webhookUrl', webhookUrl);
-                localStorage.setItem('budgetRatios', JSON.stringify(currentBudgetRatios));
-                showToast("Đã lưu máy!", "success");
-            }
-            updateUI();
-            closeSettings();
-        }
-
-        // --- Standard Logic (Transaction add, delete etc...) ---
-        document.getElementById('transactionForm').onsubmit = async (e) => {
+        // --- EVENTS ---
+        const form = document.getElementById('transactionForm');
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('btnAdd');
-            btn.disabled = true; btn.innerText = "...";
             const desc = document.getElementById('desc').value;
             const amount = parseFloat(document.getElementById('amount').value);
             const category = document.getElementById('category').value;
+            const type = document.getElementById('transType').value;
+            
+            if(!desc || !amount) return;
+
             const now = new Date();
-            const d = now.getDate().toString().padStart(2, '0');
-            const m = (now.getMonth() + 1).toString().padStart(2, '0');
-            const y = now.getFullYear();
-            const time = now.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
-            const dateStr = `${d}/${m}/${y} ${time}`;
-            const newTransaction = { desc, amount, category, date: dateStr, timestamp: now.toISOString() };
+            const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            const newTrans = {
+                desc, amount, category, type,
+                date: dateStr,
+                timestamp: now.toISOString()
+            };
+
+            const btn = document.getElementById('btnAdd');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Đang lưu...';
+            btn.disabled = true;
+
             try {
-                if (window.currentUser && window.db) {
-                    const colRef = window.collection(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions');
-                    await window.addDoc(colRef, newTransaction);
+                if (window.currentUser) {
+                    await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions'), newTrans);
                 } else {
-                    transactions.push(newTransaction);
-                    localStorage.setItem('transactions', JSON.stringify(transactions));
+                    window.transactions.push(newTrans);
+                    localStorage.setItem('transactions', JSON.stringify(window.transactions));
                     updateMonthFilterOptions();
                     updateUI();
                 }
-                if(webhookUrl) sendToWebhook(newTransaction, 'add');
-                e.target.reset(); showToast("Đã thêm!", "success");
-            } catch (err) { console.error(err); } finally { btn.disabled = false; btn.innerHTML = `<span>Thêm Giao Dịch</span>`; }
+                form.reset();
+                // Reset type to default
+                switchType('expense');
+                showToast("Đã lưu thành công!", "success");
+            } catch (err) {
+                alert("Lỗi: " + err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // --- SETTINGS & RESET LOGIC ---
+        window.openSettings = function() {
+            document.getElementById('settingsModal').style.display = 'block';
+            document.getElementById('settingIncome').value = window.totalIncome;
+            renderSettingFunds();
+        }
+        window.closeSettings = function() { document.getElementById('settingsModal').style.display = 'none'; }
+        
+        window.resetCurrentMonth = async function() {
+            const currentMonth = getMonthYear(new Date().toLocaleDateString('en-GB'));
+            if (!confirm(`Bạn có chắc chắn muốn xóa hết giao dịch của THÁNG ${currentMonth} không?`)) return;
+
+            if (window.currentUser) {
+                // Cloud: find docs in month and delete (batch)
+                // Note: Client-side filtering for simplicity, ideally query by timestamp range
+                const allTrans = window.transactions.filter(t => getMonthYear(t.date) === currentMonth);
+                const batch = window.writeBatch(window.db);
+                allTrans.forEach(t => {
+                    const docRef = window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions', t.id);
+                    batch.delete(docRef);
+                });
+                await batch.commit();
+                showToast(`Đã xóa dữ liệu tháng ${currentMonth}`, "success");
+            } else {
+                // Local
+                window.transactions = window.transactions.filter(t => getMonthYear(t.date) !== currentMonth);
+                localStorage.setItem('transactions', JSON.stringify(window.transactions));
+                updateMonthFilterOptions();
+                updateUI();
+                showToast(`Đã xóa dữ liệu tháng ${currentMonth}`, "success");
+            }
+            closeSettings();
+        }
+
+        window.clearAllData = async function() {
+            if(!confirm("CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn toàn bộ lịch sử thu chi. Bạn có chắc không?")) return;
+            
+            if (window.currentUser) {
+                // Cloud clear - Batch delete (limit 500)
+                const q = window.collection(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions');
+                const snapshot = await window.getDocs(q);
+                const batch = window.writeBatch(window.db);
+                snapshot.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+                showToast("Đã xóa toàn bộ trên Cloud", "success");
+            } else {
+                localStorage.removeItem('transactions');
+                window.transactions = [];
+                updateMonthFilterOptions();
+                updateUI();
+                showToast("Đã xóa toàn bộ trên máy", "success");
+            }
+            closeSettings();
+        }
+
+        // --- AUTH ---
+        window.openLoginModal = () => document.getElementById('loginModal').style.display = 'block';
+        window.handleLogin = async () => {
+            const email = document.getElementById('authEmail').value;
+            const pass = document.getElementById('authPassword').value;
+            try {
+                await window.signInWithEmailAndPassword(window.auth, email, pass);
+                document.getElementById('loginModal').style.display = 'none';
+            } catch(e) { document.getElementById('authError').innerText = e.message; document.getElementById('authError').classList.remove('hidden'); }
+        }
+        window.handleRegister = async () => {
+             const email = document.getElementById('authEmail').value;
+            const pass = document.getElementById('authPassword').value;
+            try {
+                await window.createUserWithEmailAndPassword(window.auth, email, pass);
+                document.getElementById('loginModal').style.display = 'none';
+                showToast("Đăng ký thành công!", "success");
+            } catch(e) { document.getElementById('authError').innerText = e.message; document.getElementById('authError').classList.remove('hidden'); }
+        }
+        window.handleLogout = async () => { if(confirm("Đăng xuất?")) await window.signOut(window.auth); }
+
+        // --- LOCAL DATA & HELPERS ---
+        function loadDataFromLocal() {
+            try {
+                window.transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+                window.totalIncome = parseFloat(localStorage.getItem('totalIncome')) || 10000000;
+                const savedRatios = localStorage.getItem('budgetRatios');
+                if (savedRatios) window.currentBudgetRatios = JSON.parse(savedRatios);
+                updateMonthFilterOptions();
+                updateUI();
+            } catch (e) {}
+        }
+
+        window.handleDelete = async function(idOrIndex) {
+            if(!confirm("Xóa dòng này?")) return;
+            if (window.currentUser) {
+                await window.deleteDoc(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions', idOrIndex));
+            } else {
+                window.transactions.splice(idOrIndex, 1);
+                localStorage.setItem('transactions', JSON.stringify(window.transactions));
+                updateUI();
+            }
         };
 
-        async function handleDelete(idOrIndex) {
-            if(!confirm('Xóa giao dịch này?')) return;
-            let itemToDelete = null;
-            if (window.currentUser && window.db) {
-                itemToDelete = transactions.find(t => t.id === idOrIndex);
-                if (itemToDelete) await window.deleteDoc(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions', idOrIndex));
-            } else {
-                itemToDelete = transactions[idOrIndex];
-                if (itemToDelete) { transactions.splice(idOrIndex, 1); localStorage.setItem('transactions', JSON.stringify(transactions)); updateUI(); }
-            }
-            if (itemToDelete && webhookUrl) sendToWebhook(itemToDelete, 'delete');
-        }
-
         function updateMonthFilterOptions() {
-            const filterSelect = document.getElementById('monthFilter');
-            const currentVal = filterSelect.value;
-            const months = [...new Set(transactions.map(t => getMonthYear(t.date)))];
-            months.sort((a, b) => {
-                if(!a || !b) return 0;
-                const [m1, y1] = a.split('/').map(Number);
-                const [m2, y2] = b.split('/').map(Number);
-                return (y2 - y1) || (m2 - m1);
-            });
-            filterSelect.innerHTML = '<option value="all">Tất cả thời gian</option>';
-            months.forEach(m => {
+            const filter = document.getElementById('monthFilter');
+            const currentVal = filter.value;
+            const months = new Set();
+            window.transactions.forEach(t => { const my = getMonthYear(t.date); if(my) months.add(my); });
+            
+            filter.innerHTML = '<option value="all">Toàn thời gian</option>';
+            Array.from(months).sort().reverse().forEach(m => {
                 const opt = document.createElement('option');
-                opt.value = m; opt.innerText = `Tháng ${m}`; filterSelect.appendChild(opt);
+                opt.value = m;
+                opt.innerText = `Tháng ${m}`;
+                filter.appendChild(opt);
             });
-            if (months.includes(currentVal) || currentVal === 'all') filterSelect.value = currentVal;
+            if ([...filter.options].some(o => o.value === currentVal)) filter.value = currentVal;
         }
 
-        function sendToWebhook(data, actionType = 'add') {
-            if(!webhookUrl) return;
-            const signedAmount = actionType === 'delete' ? -Math.abs(data.amount) : Math.abs(data.amount);
-            const catName = budgetConfig[data.category] ? budgetConfig[data.category].name : data.category;
-            const payload = { ...data, categoryName: catName, formattedAmount: formatMoney(data.amount), realAmount: signedAmount, status: actionType === 'delete' ? '-' : '+', action: actionType };
-            fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(e => console.error(e));
+        window.saveSettings = async function() {
+            const inc = parseFloat(document.getElementById('settingIncome').value);
+            // Collect Funds
+            const rows = document.querySelectorAll('.fund-row');
+            let newRatios = {};
+            let totalP = 0;
+            rows.forEach(row => {
+                const key = row.dataset.key;
+                const name = row.querySelector('.fund-name').value;
+                const percent = parseFloat(row.querySelector('.fund-percent').value);
+                const color = row.querySelector('.fund-color').value;
+                if(name) { newRatios[key] = { name, percent: percent / 100, color }; totalP += percent; }
+            });
+
+            if (Math.abs(totalP - 100) > 0.5) return alert(`Tổng tỷ lệ là ${totalP}%. Phải bằng 100%`);
+
+            window.totalIncome = inc;
+            window.currentBudgetRatios = newRatios;
+
+            if (window.currentUser) {
+                await window.setDoc(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'settings', 'config'), {
+                    totalIncome: inc, budgetRatios: newRatios
+                });
+            } else {
+                localStorage.setItem('totalIncome', inc);
+                localStorage.setItem('budgetRatios', JSON.stringify(newRatios));
+            }
+            document.getElementById('category').dataset.needsUpdate = "true";
+            updateUI();
+            closeSettings();
+            showToast("Đã lưu!", "success");
         }
 
-        // Utils
-        const amountInput = document.getElementById('amount'); const suggestionBox = document.getElementById('amountSuggestions');
-        amountInput.addEventListener('input', function() {
-            const val = parseInt(this.value.replace(/[^0-9]/g, ''));
-            if (!val) { suggestionBox.classList.add('hidden'); return; }
-            const m = [1000, 10000, 100000, 1000000]; let html = '';
-            m.forEach(x => { const r = val * x; html += `<div class="p-2 hover:bg-slate-100 cursor-pointer text-sm" onclick="document.getElementById('amount').value=${r};this.parentElement.classList.add('hidden')">${formatMoney(r)}</div>`; });
-            suggestionBox.innerHTML = html; suggestionBox.classList.remove('hidden');
-        });
-        window.onclick = function(event) {
-            const modals = [document.getElementById('settingsModal'), document.getElementById('loginModal')];
-            modals.forEach(m => { if (event.target == m) m.style.display = "none"; });
-        }
-        document.addEventListener('click', (e) => { if(!amountInput.contains(e.target)) suggestionBox.classList.add('hidden'); });
-        
-        let myChart = null;
-        function updateChart(spentData) {
-            const canvas = document.getElementById('budgetChart');
-            if (!canvas) return;
-            const data = { labels: Object.values(budgetConfig).map(c => c.name), datasets: [{ data: Object.keys(budgetConfig).map(k => spentData[k]), backgroundColor: Object.values(budgetConfig).map(c => c.color), borderWidth: 0 }] };
-            if (myChart) myChart.destroy();
-            const ctx = canvas.getContext('2d');
-            myChart = new Chart(ctx, { type: 'doughnut', data: data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }, cutout: '70%' } });
-        }
-        function showToast(message, type) {
-            const x = document.getElementById("toast"); x.className = "show " + type; x.innerText = message; setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
-        }
-        function copyToGoogleSheets() {
-            const filterVal = document.getElementById('monthFilter').value;
-            let dataToExport = transactions;
-            if (filterVal !== 'all') dataToExport = transactions.filter(t => getMonthYear(t.date) === filterVal);
-            let text = "Ngày\tNội dung\tHạng mục\tSố tiền\n";
-            dataToExport.forEach(t => text += `${t.date}\t${t.desc}\t${budgetConfig[t.category]?.name || t.category}\t${t.amount}\n`);
-            const textArea = document.createElement("textarea"); textArea.value = text; document.body.appendChild(textArea); textArea.select();
-            try { document.execCommand('copy'); showToast("Đã copy!", "success"); } catch (err) { showToast("Lỗi copy", "error"); } document.body.removeChild(textArea);
-        }
-        function downloadTemplate() {
-            if(typeof XLSX === 'undefined') { alert("Thư viện Excel chưa tải xong."); return; }
-            const ws = XLSX.utils.json_to_sheet([{ "Ngày": "01/01/2026", "Nội dung": "Mẫu", "Hạng mục": "fixed", "Số tiền": 1000 }]);
-            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Mau"); XLSX.writeFile(wb, "Mau.xlsx");
-        }
-        function appendDataToExcel(input) {
-            const file = input.files[0]; if (!file) return;
-            if(typeof XLSX === 'undefined') { alert("Lỗi thư viện Excel."); return; }
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'});
-                    const firstSheetName = workbook.SheetNames[0]; const worksheet = workbook.Sheets[firstSheetName];
-                    let existingData = XLSX.utils.sheet_to_json(worksheet);
-                    const filterVal = document.getElementById('monthFilter').value; let newData = transactions;
-                    if (filterVal !== 'all') newData = transactions.filter(t => getMonthYear(t.date) === filterVal);
-                    const newDataFormatted = newData.map(t => ({ "Ngày": t.date, "Nội dung": t.desc, "Hạng mục": budgetConfig[t.category]?.name || t.category, "Số tiền": parseFloat(t.amount) }));
-                    const combinedData = existingData.concat(newDataFormatted); const newWs = XLSX.utils.json_to_sheet(combinedData);
-                    const newWb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(newWb, newWs, "Chi Tieu Gop"); XLSX.writeFile(newWb, "Chi_Tieu_Cap_Nhat.xlsx");
-                    input.value = ''; showToast("Đã xuất file gộp thành công!", "success");
-                } catch(err) { console.error(err); alert("Lỗi đọc file Excel."); }
-            }; reader.readAsArrayBuffer(file);
+        window.renderSettingFunds = function() {
+            const container = document.getElementById('budgetListContainer');
+            container.innerHTML = '';
+            let totalP = 0;
+            for(let key in window.currentBudgetRatios) {
+                const item = window.currentBudgetRatios[key];
+                const p = (item.percent * 100).toFixed(1);
+                totalP += parseFloat(p);
+                addFundRowUI(key, item.name, p, item.color);
+            }
+            document.getElementById('totalPercentDisplay').innerText = `Tổng: ${totalP.toFixed(1)}%`;
         }
 
-        if(!window.isFirebaseReady) updateUI();
+        window.addFundRowUI = function(key, name, percent, color) {
+            const container = document.getElementById('budgetListContainer');
+            const div = document.createElement('div');
+            div.className = 'grid grid-cols-12 gap-2 items-center fund-row mb-2';
+            div.dataset.key = key;
+            div.innerHTML = `
+                <div class="col-span-1"><input type="color" class="fund-color w-full h-8 rounded cursor-pointer border-0 p-0" value="${color}"></div>
+                <div class="col-span-6"><input type="text" class="fund-name input-field py-1 px-2 text-sm" value="${name}"></div>
+                <div class="col-span-3"><input type="number" class="fund-percent input-field py-1 px-2 text-sm text-center" value="${percent}" step="0.5"></div>
+                <div class="col-span-2 text-right"><button onclick="this.parentElement.parentElement.remove()" class="text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
+        }
+        window.addNewFundRow = function() { window.addFundRowUI('fund_' + Date.now(), 'Quỹ mới', 0, '#000000'); }
+
+        window.showToast = function(msg, type='info') {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
     </script>
 </body>
 </html>
