@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Chi Tiêu Pro - Realtime</title>
+    <title>Chi Tiêu Pro - Đồng Bộ Hóa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -37,7 +37,9 @@
                 const app = initializeApp(firebaseConfig);
                 window.auth = getAuth(app);
                 window.db = getFirestore(app);
-                window.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                
+                // QUAN TRỌNG: Cố định App ID để đồng bộ dữ liệu mọi nơi
+                window.appId = 'chi-tieu-pro-v1'; 
                 
                 window.signInWithEmailAndPassword = signInWithEmailAndPassword;
                 window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
@@ -321,7 +323,7 @@
                     userDisplay.className = 'auth-status auth-user';
                     btnLogin.classList.add('hidden');
                     btnLogout.classList.remove('hidden');
-                    syncStatus.innerHTML = "<span class='text-green-400 font-bold'>● Online</span> • Đã đồng bộ với thiết bị khác.";
+                    syncStatus.innerHTML = "<span class='text-green-400 font-bold'>● Online</span> • Đã đồng bộ dữ liệu.";
                     showToast(`Xin chào ${user.email}`, 'info');
                     await loadDataFromCloud(user.uid);
                 } else {
