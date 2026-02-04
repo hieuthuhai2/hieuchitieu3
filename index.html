@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Chi Tiêu Pro</title>
+    <title>Chi Tiêu Pro - Đồng Bộ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -37,7 +37,8 @@
                 const app = initializeApp(firebaseConfig);
                 window.auth = getAuth(app);
                 window.db = getFirestore(app);
-                window.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                // FIX: Sử dụng ID cố định để đảm bảo mọi thiết bị đều trỏ về cùng 1 kho dữ liệu
+                window.appId = 'chi-tieu-pro-global-v1'; 
                 
                 window.signInWithEmailAndPassword = signInWithEmailAndPassword;
                 window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
@@ -323,7 +324,7 @@
                     userDisplay.className = 'auth-status auth-guest';
                     btnLogin.classList.remove('hidden');
                     btnLogout.classList.add('hidden');
-                    syncStatus.innerHTML = "<span class='text-yellow-400 font-bold'>● Local</span> • Dữ liệu chỉ lưu trên máy này.";
+                    syncStatus.innerHTML = "<span class='text-yellow-400 font-bold'>● Local</span> • Dữ liệu KHÔNG đồng bộ (Chưa đăng nhập).";
                     loadDataFromLocal();
                 }
                 lucide.createIcons();
@@ -348,7 +349,7 @@
                 updateUI();
             }, (error) => {
                 console.error("Lỗi sync transactions:", error);
-                document.getElementById('syncStatus').innerHTML = `<span class='text-red-500 font-bold'>● Lỗi Đồng Bộ</span> • ${error.message} (Kiểm tra quyền truy cập)`;
+                document.getElementById('syncStatus').innerHTML = `<span class='text-red-500 font-bold'>● Lỗi Đồng Bộ</span> • ${error.message}`;
                 showToast("Lỗi đồng bộ dữ liệu!", "error");
             });
 
