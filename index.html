@@ -2,22 +2,15 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <!-- CẤU HÌNH CHO IOS / MOBILE -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Chi Tiêu Pro">
-    
-    <title>Quản Lý Chi Tiêu - Tùy Chỉnh Full</title>
+    <title>Chi Tiêu Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <!-- SheetJS (Excel) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <!-- FIREBASE INIT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -25,7 +18,6 @@
 
         window.isFirebaseReady = false;
         try {
-            // CẤU HÌNH
             const hardcodedConfig = {
                 apiKey: "AIzaSyADN0-ME1iLd2cKCaSQ6gg-xCuYzqLVOuk",
                 authDomain: "quanlychitieu-43b93.firebaseapp.com",
@@ -39,9 +31,6 @@
             let firebaseConfig = hardcodedConfig;
             if (typeof __firebase_config !== 'undefined') {
                 try { firebaseConfig = JSON.parse(__firebase_config); } catch (e) {}
-            } else {
-                const local = localStorage.getItem('custom_firebase_config');
-                if (local) try { firebaseConfig = JSON.parse(local); } catch(e) {}
             }
 
             if (firebaseConfig) {
@@ -50,7 +39,6 @@
                 window.db = getFirestore(app);
                 window.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 
-                // Expose functions
                 window.signInWithEmailAndPassword = signInWithEmailAndPassword;
                 window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
                 window.signOut = signOut;
@@ -71,15 +59,12 @@
                 window.getDocs = getDocs;
                 
                 window.isFirebaseReady = true;
-                console.log("Firebase Connected");
             }
-        } catch (e) {
-            console.error("Firebase Error:", e);
-        }
+        } catch (e) { console.error(e); }
     </script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .safe-top-padding { padding-top: max(5rem, env(safe-area-inset-top) + 2rem); }
         .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border: 1px solid #f1f5f9; }
         .input-field { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; width: 100%; transition: all 0.2s; font-size: 16px; }
@@ -96,26 +81,12 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        /* FIX: Sử dụng CSS chuẩn thay vì @apply để đảm bảo chạy trên mọi trình duyệt */
-        .type-btn {
-            flex: 1;
-            padding: 8px 0;
-            text-align: center;
-            border-radius: 9999px; /* Rounded Full */
-            font-weight: 600;
-            transition: all 0.2s ease-in-out;
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
+        .type-btn { flex: 1; padding: 8px 0; text-align: center; border-radius: 9999px; font-weight: 600; transition: all 0.2s ease-in-out; cursor: pointer; font-size: 0.875rem; }
         .type-btn.active-income { background-color: #dcfce7; color: #166534; border: 1px solid #86efac; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .type-btn.active-expense { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .type-btn.inactive { background-color: transparent; color: #64748b; border: 1px solid transparent; }
 
-        /* Animation cho suggestion box */
-        .suggestion-box {
-            animation: fadeIn 0.1s ease-out;
-            max-height: 200px;
-        }
+        .suggestion-box { animation: fadeIn 0.1s ease-out; max-height: 200px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -134,16 +105,12 @@
                         <i data-lucide="settings" class="w-5 h-5"></i>
                     </button>
                 </div>
-                
                 <div id="authContainer" class="mt-3 flex items-center gap-2">
-                    <span id="userDisplay" class="auth-status auth-guest">
-                        <i data-lucide="user" class="w-3 h-3"></i> Đang tải...
-                    </span>
+                    <span id="userDisplay" class="auth-status auth-guest"><i data-lucide="user" class="w-3 h-3"></i> Đang tải...</span>
                     <button id="btnLogin" onclick="openLoginModal()" class="hidden text-sm text-blue-600 hover:text-blue-700 font-semibold px-2">Đăng nhập</button>
                     <button id="btnLogout" onclick="handleLogout()" class="hidden text-sm text-red-500 hover:text-red-600 px-2">Đăng xuất</button>
                 </div>
             </div>
-
             <div class="flex flex-wrap items-center gap-2">
                 <div class="relative">
                     <select id="monthFilter" onchange="updateUI()" class="appearance-none bg-white border border-slate-200 text-slate-700 py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:border-blue-500 text-sm font-medium shadow-sm cursor-pointer hover:bg-slate-50 transition">
@@ -151,120 +118,77 @@
                     </select>
                     <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none"></i>
                 </div>
-                
-                <button onclick="document.getElementById('fileInput').click()" class="bg-white text-slate-600 hover:bg-slate-50 hover:text-green-600 px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 shadow-sm flex items-center gap-2 transition">
-                    <i data-lucide="sheet" class="w-4 h-4"></i> Excel
-                </button>
+                <button onclick="document.getElementById('fileInput').click()" class="bg-white text-slate-600 hover:bg-slate-50 hover:text-green-600 px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 shadow-sm flex items-center gap-2 transition"><i data-lucide="sheet" class="w-4 h-4"></i> Excel</button>
                 <input type="file" id="fileInput" accept=".xlsx" class="hidden" onchange="appendDataToExcel(this)">
             </div>
         </div>
 
-        <!-- NEW DASHBOARD STATS (THỐNG KÊ THÁNG) -->
+        <!-- DASHBOARD -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <!-- Thu Nhập -->
             <div class="card p-5 border-l-4 border-green-500 relative overflow-hidden group">
-                <div class="absolute right-0 top-0 opacity-5 transform translate-x-4 -translate-y-2 group-hover:scale-110 transition">
-                    <i data-lucide="trending-up" class="w-32 h-32 text-green-600"></i>
-                </div>
+                <div class="absolute right-0 top-0 opacity-5 transform translate-x-4 -translate-y-2 group-hover:scale-110 transition"><i data-lucide="trending-up" class="w-32 h-32 text-green-600"></i></div>
                 <div class="relative z-10">
-                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                        <i data-lucide="arrow-up-circle" class="w-3 h-3 text-green-500"></i> Tổng Thu Nhập
-                    </h3>
+                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider flex items-center gap-1"><i data-lucide="arrow-up-circle" class="w-3 h-3 text-green-500"></i> Tổng Thu Nhập</h3>
                     <p id="statIncome" class="text-2xl font-bold text-slate-800 mt-1">0đ</p>
                     <p class="text-xs text-slate-400 mt-1" id="labelIncome">Tháng này</p>
                 </div>
             </div>
-
-            <!-- Chi Tiêu -->
             <div class="card p-5 border-l-4 border-red-500 relative overflow-hidden group">
-                <div class="absolute right-0 top-0 opacity-5 transform translate-x-4 -translate-y-2 group-hover:scale-110 transition">
-                    <i data-lucide="trending-down" class="w-32 h-32 text-red-600"></i>
-                </div>
+                <div class="absolute right-0 top-0 opacity-5 transform translate-x-4 -translate-y-2 group-hover:scale-110 transition"><i data-lucide="trending-down" class="w-32 h-32 text-red-600"></i></div>
                 <div class="relative z-10">
-                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                        <i data-lucide="arrow-down-circle" class="w-3 h-3 text-red-500"></i> Tổng Chi Tiêu
-                    </h3>
+                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider flex items-center gap-1"><i data-lucide="arrow-down-circle" class="w-3 h-3 text-red-500"></i> Tổng Chi Tiêu</h3>
                     <p id="statExpense" class="text-2xl font-bold text-slate-800 mt-1">0đ</p>
                     <p class="text-xs text-slate-400 mt-1" id="labelExpense">Tháng này</p>
                 </div>
             </div>
-
-            <!-- Số Dư -->
             <div class="card p-5 border-l-4 border-blue-500 relative overflow-hidden group">
-                <div class="absolute right-0 top-0 opacity-5 transform translate-x-4 -translate-y-2 group-hover:scale-110 transition">
-                    <i data-lucide="wallet" class="w-32 h-32 text-blue-600"></i>
-                </div>
+                <div class="absolute right-0 top-0 opacity-5 transform translate-x-4 -translate-y-2 group-hover:scale-110 transition"><i data-lucide="wallet" class="w-32 h-32 text-blue-600"></i></div>
                 <div class="relative z-10">
-                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                        <i data-lucide="scale" class="w-3 h-3 text-blue-500"></i> Số Dư Thực Tế
-                    </h3>
+                    <h3 class="text-slate-500 text-xs font-bold uppercase tracking-wider flex items-center gap-1"><i data-lucide="scale" class="w-3 h-3 text-blue-500"></i> Số Dư Thực Tế</h3>
                     <p id="statBalance" class="text-2xl font-bold text-blue-600 mt-1">0đ</p>
                     <p class="text-xs text-slate-400 mt-1">Kế hoạch + Thu - Chi</p>
                 </div>
             </div>
         </div>
 
-        <!-- MAIN CONTENT -->
+        <!-- MAIN -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 space-y-6">
-                
-                <!-- ADD TRANSACTION FORM -->
+                <!-- ADD FORM -->
                 <div class="card p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                            <i data-lucide="plus-circle" class="w-5 h-5 text-blue-600"></i> Thêm Giao Dịch
-                        </h2>
-                        <!-- Type Switcher - Fully Rounded -->
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i data-lucide="plus-circle" class="w-5 h-5 text-blue-600"></i> Thêm Giao Dịch</h2>
                         <div class="flex bg-slate-100 rounded-full p-1 w-48 shadow-inner">
                             <div onclick="switchType('expense')" id="btnTypeExpense" class="type-btn active-expense">Chi Tiêu</div>
                             <div onclick="switchType('income')" id="btnTypeIncome" class="type-btn inactive">Thu Nhập</div>
                         </div>
                     </div>
-
                     <form id="transactionForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Input ẩn để lưu loại giao dịch -->
                         <input type="hidden" id="transType" value="expense">
-
                         <div class="md:col-span-2"> 
                             <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Nội dung</label>
-                            <input type="text" id="desc" class="input-field" placeholder="Ví dụ: Ăn trưa, Nhận lương..." required>
+                            <input type="text" id="desc" class="input-field" placeholder="Ví dụ: Ăn trưa..." required>
                         </div>
-                        
                         <div class="relative z-20">
-                            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Số tiền (đ)</label>
+                            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Số tiền (VNĐ)</label>
                             <input type="number" id="amount" class="input-field font-bold text-slate-700" placeholder="0" required autocomplete="off" inputmode="numeric">
-                            <!-- Suggestion Box for Amount -->
                             <div id="amountSuggestions" class="suggestion-box absolute w-full bg-white shadow-xl rounded-lg z-50 top-full mt-1 hidden overflow-y-auto border border-slate-200 custom-scrollbar"></div>
                         </div>
-                        
-                        <!-- Category (Chỉ hiện khi là Expense) -->
                         <div id="categoryContainer" class="z-10">
                             <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Lấy từ Quỹ</label>
-                            <select id="category" class="input-field bg-white">
-                                <!-- JS sẽ điền options -->
-                            </select>
+                            <select id="category" class="input-field bg-white"></select>
                         </div>
-
-                        <!-- Date (Optional, default now) -->
-                        <div class="hidden">
-                            <!-- Could add date picker here if needed later -->
-                        </div>
-
                         <div class="md:col-span-2 mt-2">
-                            <button type="submit" id="btnAdd" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-slate-200 transition active:scale-95 flex justify-center items-center gap-2">
-                                <i data-lucide="save" class="w-4 h-4"></i> Lưu Giao Dịch
-                            </button>
+                            <button type="submit" id="btnAdd" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-slate-200 transition active:scale-95 flex justify-center items-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Lưu Giao Dịch</button>
                         </div>
                     </form>
                 </div>
 
-                <!-- BUDGET PROGRESS BARS -->
+                <!-- BUDGET -->
                 <div class="card overflow-hidden">
                     <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                        <span class="font-bold text-slate-700 text-sm">Tình Trạng Các Quỹ (Dựa trên Thu Nhập Kế Hoạch)</span>
-                        <div class="text-xs bg-white border px-2 py-1 rounded text-slate-500 flex items-center gap-1 cursor-help" title="Ngân sách quỹ = Tổng thu nhập cài đặt * Tỷ lệ %">
-                            <i data-lucide="info" class="w-3 h-3"></i> Kế hoạch: <span id="plannedIncomeDisplay" class="font-bold">...</span>
-                        </div>
+                        <span class="font-bold text-slate-700 text-sm">Tình Trạng Các Quỹ</span>
+                        <div class="text-xs bg-white border px-2 py-1 rounded text-slate-500 flex items-center gap-1 cursor-help"><i data-lucide="info" class="w-3 h-3"></i> Kế hoạch: <span id="plannedIncomeDisplay" class="font-bold">...</span></div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left">
@@ -281,119 +205,70 @@
                     </div>
                 </div>
 
-                <!-- HISTORY LIST -->
+                <!-- HISTORY -->
                 <div class="card p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                            <i data-lucide="history" class="w-5 h-5 text-slate-400"></i> Lịch Sử
-                        </h2>
-                    </div>
+                    <div class="flex justify-between items-center mb-4"><h2 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i data-lucide="history" class="w-5 h-5 text-slate-400"></i> Lịch Sử</h2></div>
                     <div class="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                        <table class="w-full text-sm">
-                            <tbody id="historyBody"></tbody>
-                        </table>
-                        <div id="emptyHistory" class="hidden text-center py-8 text-slate-400">
-                            <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 opacity-20"></i>
-                            <p>Chưa có giao dịch nào trong tháng này.</p>
-                        </div>
+                        <table class="w-full text-sm"><tbody id="historyBody"></tbody></table>
+                        <div id="emptyHistory" class="hidden text-center py-8 text-slate-400"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 opacity-20"></i><p>Chưa có giao dịch nào.</p></div>
                     </div>
                 </div>
             </div>
 
-            <!-- RIGHT SIDEBAR -->
+            <!-- SIDEBAR -->
             <div class="space-y-6">
-                <!-- Chart -->
                 <div class="card p-6 flex flex-col items-center">
                     <h2 class="text-sm font-bold mb-4 text-slate-500 uppercase tracking-wider w-full text-left">Phân Bổ Chi Tiêu</h2>
-                    <div class="w-full h-[250px] relative">
-                        <canvas id="budgetChart"></canvas>
-                    </div>
+                    <div class="w-full h-[250px] relative"><canvas id="budgetChart"></canvas></div>
                 </div>
-
-                <!-- Sync Status -->
                 <div class="card p-5 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-xl border-0">
-                    <h2 class="text-base font-bold mb-2 flex items-center gap-2">
-                        <i data-lucide="cloud" class="w-4 h-4"></i> Trạng thái
-                    </h2>
+                    <h2 class="text-base font-bold mb-2 flex items-center gap-2"><i data-lucide="cloud" class="w-4 h-4"></i> Trạng thái</h2>
                     <p id="syncStatus" class="text-sm opacity-90 leading-relaxed mb-3">Đang kết nối...</p>
-                    <div class="text-xs space-y-1.5 opacity-60">
-                        <p>• Dữ liệu được lưu trữ an toàn trên đám mây.</p>
-                        <p>• Đăng nhập để đồng bộ giữa các thiết bị.</p>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL SETTINGS (UPDATED WITH RESET & INCOME PLAN) -->
+    <!-- SETTINGS MODAL -->
     <div id="settingsModal" class="modal">
         <div class="modal-content shadow-2xl animate-[fadeIn_0.2s_ease-out] max-w-2xl">
             <div class="flex justify-between items-center mb-6 border-b pb-4">
-                <h2 class="text-xl font-bold flex items-center gap-2">
-                    <i data-lucide="sliders" class="w-5 h-5"></i> Cài Đặt Hệ Thống
-                </h2>
-                <button onclick="closeSettings()" class="text-slate-400 hover:text-slate-600 transition">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
+                <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="sliders" class="w-5 h-5"></i> Cài Đặt Hệ Thống</h2>
+                <button onclick="closeSettings()" class="text-slate-400 hover:text-slate-600 transition"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
-            
             <div class="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                <!-- 1. Income Plan -->
                 <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 relative">
                     <label class="block text-sm font-bold mb-2 text-blue-800">1. Thu Nhập Kế Hoạch (Vốn đầu tháng)</label>
                     <div class="relative z-50">
                         <input type="number" id="settingIncome" class="input-field text-lg font-bold text-blue-600 bg-white" placeholder="VNĐ">
-                         <!-- Suggestion Box for Setting Income -->
                         <div id="incomeSuggestions" class="suggestion-box absolute w-full bg-white shadow-xl rounded-lg z-50 top-full mt-1 hidden overflow-y-auto border border-slate-200 custom-scrollbar"></div>
                     </div>
-                    <p class="text-xs text-blue-500 mt-2">
-                        * Số tiền này sẽ được dùng làm "Vốn ban đầu" để tính số dư thực tế và phân bổ hạn mức cho các quỹ.
-                    </p>
+                    <p class="text-xs text-blue-500 mt-2">* Số tiền này dùng để tính hạn mức quỹ và số dư thực tế.</p>
                 </div>
-
-                <!-- 2. Funds Config -->
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <label class="block text-sm font-bold text-slate-700">2. Cấu hình Quỹ Chi Tiêu</label>
                         <span id="totalPercentDisplay" class="text-xs font-bold bg-slate-100 px-2 py-1 rounded border">Tổng: 100%</span>
                     </div>
-                    <div class="grid grid-cols-12 gap-2 text-[10px] font-bold text-slate-400 mb-2 uppercase px-1">
-                        <div class="col-span-1">Màu</div>
-                        <div class="col-span-6">Tên quỹ</div>
-                        <div class="col-span-3 text-center">Tỷ lệ %</div>
-                        <div class="col-span-2 text-right">Xóa</div>
-                    </div>
                     <div id="budgetListContainer" class="space-y-2"></div>
-                    <button onclick="addNewFundRow()" class="mt-3 text-sm text-blue-600 font-bold hover:bg-blue-50 px-3 py-2.5 rounded-lg border border-dashed border-blue-300 w-full flex justify-center items-center gap-2 transition">
-                        <i data-lucide="plus" class="w-4 h-4"></i> Thêm quỹ mới
-                    </button>
+                    <button onclick="addNewFundRow()" class="mt-3 text-sm text-blue-600 font-bold hover:bg-blue-50 px-3 py-2.5 rounded-lg border border-dashed border-blue-300 w-full flex justify-center items-center gap-2 transition"><i data-lucide="plus" class="w-4 h-4"></i> Thêm quỹ mới</button>
                 </div>
-
-                <!-- 3. Danger Zone (Reset) -->
                 <div class="border-t pt-6 mt-6">
-                    <label class="block text-sm font-bold mb-3 text-red-600 uppercase tracking-wide">3. Khởi động lại (Reset)</label>
+                    <label class="block text-sm font-bold mb-3 text-red-600 uppercase tracking-wide">3. Vùng Nguy Hiểm</label>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <button onclick="resetCurrentMonth()" class="px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition text-sm font-medium flex items-center justify-center gap-2">
-                            <i data-lucide="calendar-x" class="w-4 h-4"></i> Xóa dữ liệu tháng này
-                        </button>
-                        <button onclick="clearAllData()" class="px-4 py-3 bg-red-50 border border-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition text-sm font-medium flex items-center justify-center gap-2">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i> Xóa toàn bộ dữ liệu
-                        </button>
+                        <button onclick="resetCurrentMonth()" class="px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition text-sm font-medium flex items-center justify-center gap-2"><i data-lucide="calendar-x" class="w-4 h-4"></i> Reset tháng này</button>
+                        <button onclick="clearAllData()" class="px-4 py-3 bg-red-50 border border-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition text-sm font-medium flex items-center justify-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Reset toàn bộ</button>
                     </div>
-                    <p class="text-xs text-slate-400 mt-2 italic">Hành động này không thể hoàn tác.</p>
                 </div>
             </div>
-
             <div class="flex gap-3 justify-end mt-6 border-t pt-4">
                 <button onclick="closeSettings()" class="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl font-medium transition">Hủy</button>
-                <button onclick="saveSettings()" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 font-semibold transition flex items-center gap-2">
-                    <i data-lucide="check" class="w-4 h-4"></i> Lưu Thay Đổi
-                </button>
+                <button onclick="saveSettings()" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 font-semibold transition flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Lưu Thay Đổi</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL LOGIN -->
+    <!-- LOGIN MODAL -->
     <div id="loginModal" class="modal">
         <div class="modal-content shadow-2xl max-w-sm">
             <div class="flex justify-between items-center mb-6">
@@ -401,98 +276,65 @@
                 <button onclick="document.getElementById('loginModal').style.display='none'" class="text-2xl text-slate-400">&times;</button>
             </div>
             <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                    <input type="email" id="authEmail" class="input-field" placeholder="email@example.com">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Mật khẩu</label>
-                    <input type="password" id="authPassword" class="input-field" placeholder="******">
-                </div>
-                <div class="flex items-center gap-2 mt-2">
-                    <input type="checkbox" id="authRemember" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked>
-                    <label for="authRemember" class="text-sm text-slate-600">Duy trì đăng nhập</label>
-                </div>
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" id="authEmail" class="input-field" placeholder="email@example.com"></div>
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Mật khẩu</label><input type="password" id="authPassword" class="input-field" placeholder="******"></div>
+                <div class="flex items-center gap-2 mt-2"><input type="checkbox" id="authRemember" class="w-4 h-4 text-blue-600 rounded"><label for="authRemember" class="text-sm text-slate-600">Duy trì đăng nhập</label></div>
             </div>
             <div class="grid grid-cols-2 gap-3 mt-6">
-                <button onclick="handleLogin()" class="bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium transition">Đăng Nhập</button>
-                <button onclick="handleRegister()" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 py-2.5 rounded-xl font-medium transition">Đăng Ký</button>
+                <button onclick="handleLogin()" class="bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-medium">Đăng Nhập</button>
+                <button onclick="handleRegister()" class="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 py-2.5 rounded-xl font-medium">Đăng Ký</button>
             </div>
             <p id="authError" class="text-red-500 text-sm mt-3 text-center hidden"></p>
         </div>
     </div>
 
-    <!-- TOAST -->
     <div id="toast">Thông báo</div>
 
-    <script>
-        // --- LUCIDE ICONS INIT ---
-        lucide.createIcons();
-    </script>
-
+    <script> lucide.createIcons(); </script>
     <script type="module">
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        
         let unsubscribeTrans = null;
         let unsubscribeSettings = null;
 
         window.onload = function() {
-            lucide.createIcons(); // Re-init icons
-            
-            // INIT AUTO SUGGESTIONS
+            lucide.createIcons();
             initAutoSuggest('amount', 'amountSuggestions');
             initAutoSuggest('settingIncome', 'incomeSuggestions');
-
-            if (!window.isFirebaseReady) {
-                console.log("Offline Mode");
-                initOfflineMode();
-                return;
-            }
+            
+            if (!window.isFirebaseReady) { initOfflineMode(); return; }
 
             onAuthStateChanged(window.auth, async (user) => {
                 const userDisplay = document.getElementById('userDisplay');
                 const btnLogin = document.getElementById('btnLogin');
                 const btnLogout = document.getElementById('btnLogout');
                 const syncStatus = document.getElementById('syncStatus');
-
                 window.currentUser = user;
 
                 if (user) {
-                    // LOGGED IN
                     userDisplay.innerHTML = `<i data-lucide="user" class="w-3 h-3"></i> ${user.email.split('@')[0]}`;
                     userDisplay.className = 'auth-status auth-user';
                     btnLogin.classList.add('hidden');
                     btnLogout.classList.remove('hidden');
                     syncStatus.innerHTML = "<span class='text-green-400 font-bold'>● Online</span> • Đã đồng bộ dữ liệu.";
-                    
                     showToast(`Xin chào ${user.email}`, 'info');
                     await loadDataFromCloud(user.uid);
                 } else {
-                    // LOGGED OUT
                     userDisplay.innerHTML = `<i data-lucide="user" class="w-3 h-3"></i> Khách`;
                     userDisplay.className = 'auth-status auth-guest';
                     btnLogin.classList.remove('hidden');
                     btnLogout.classList.add('hidden');
                     syncStatus.innerHTML = "<span class='text-yellow-400 font-bold'>● Local</span> • Dữ liệu chỉ lưu trên máy này.";
-
-                    if (unsubscribeTrans) unsubscribeTrans();
-                    if (unsubscribeSettings) unsubscribeSettings();
-                    
                     loadDataFromLocal();
                 }
                 lucide.createIcons();
             });
-            
             window.myChart = null;
         };
 
-        function initOfflineMode() {
-            loadDataFromLocal();
-        }
+        function initOfflineMode() { loadDataFromLocal(); }
 
         async function loadDataFromCloud(userId) {
             if (!window.db) return;
-
             // Transactions
             const transRef = window.collection(window.db, 'artifacts', window.appId, 'users', userId, 'transactions');
             if (unsubscribeTrans) unsubscribeTrans();
@@ -503,7 +345,6 @@
                 updateMonthFilterOptions();
                 updateUI();
             });
-
             // Settings
             const settingsRef = window.doc(window.db, 'artifacts', window.appId, 'users', userId, 'settings', 'config');
             if (unsubscribeSettings) unsubscribeSettings();
@@ -514,17 +355,13 @@
                     if (data.budgetRatios) window.currentBudgetRatios = data.budgetRatios;
                     updateUI();
                 } else {
-                    window.setDoc(settingsRef, { 
-                        totalIncome: 10000000, 
-                        budgetRatios: window.defaultBudgetRatios
-                    });
+                    window.setDoc(settingsRef, { totalIncome: 10000000, budgetRatios: window.defaultBudgetRatios });
                 }
             });
         }
     </script>
 
     <script>
-        // --- LOGIC ---
         window.defaultBudgetRatios = {
             fixed: { name: 'Thiết yếu (55%)', percent: 0.55, color: '#3b82f6' },
             education: { name: 'Giáo dục (10%)', percent: 0.10, color: '#a855f7' },
@@ -533,91 +370,46 @@
             play: { name: 'Hưởng thụ (10%)', percent: 0.10, color: '#ec4899' },
             charity: { name: 'Cho đi (5%)', percent: 0.05, color: '#64748b' }
         };
-
         window.currentBudgetRatios = JSON.parse(JSON.stringify(window.defaultBudgetRatios));
         window.transactions = [];
         window.totalIncome = 10000000;
         window.budgetConfig = {};
 
-        // UI Helpers
-        function formatMoney(amount) { return new Intl.NumberFormat('vi-VN').format(amount) + 'đ'; }
-        function getMonthYear(dateStr) {
-            if(!dateStr) return "";
-            if(dateStr.length > 10) return dateStr.substring(3, 10); 
-            return dateStr.substring(3); 
-        }
+        function formatMoney(amount) { return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ'; }
+        function getMonthYear(dateStr) { if(!dateStr) return ""; if(dateStr.length > 10) return dateStr.substring(3, 10); return dateStr.substring(3); }
 
-        // --- CORE FUNCTIONS ---
-
-        // NEW: AUTO SUGGESTION FUNCTION
+        // AUTO SUGGEST
         window.initAutoSuggest = function(inputId, listId) {
             const input = document.getElementById(inputId);
             const list = document.getElementById(listId);
             if (!input || !list) return;
-
             const updateList = () => {
                 const val = input.value;
-                if (!val) {
-                    list.classList.add('hidden');
-                    return;
-                }
-                
+                if (!val) { list.classList.add('hidden'); return; }
                 const num = parseInt(val);
-                if (isNaN(num) || num <= 0) {
-                    list.classList.add('hidden');
-                    return;
-                }
-
-                // Generate multipliers based on user input
-                const multipliers = [
-                    1000, 
-                    10000, 
-                    100000, 
-                    1000000, 
-                    10000000, 
-                    100000000, 
-                    1000000000
-                ];
-                
+                if (isNaN(num) || num <= 0) { list.classList.add('hidden'); return; }
+                const multipliers = [1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000];
                 let html = '';
                 multipliers.forEach(m => {
                     const result = num * m;
-                    // Format vietnamese currency
                     const fmt = new Intl.NumberFormat('vi-VN').format(result);
                     const multiplierFmt = new Intl.NumberFormat('vi-VN').format(m);
-                    
-                    html += `<div class="p-3 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0 text-slate-700 flex justify-between items-center group" onclick="applySuggestion('${inputId}', '${listId}', ${result})">
-                        <span class="font-medium group-hover:text-blue-600 text-sm">${fmt}đ</span>
-                        <span class="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded group-hover:bg-blue-100 group-hover:text-blue-500">x${multiplierFmt}</span>
-                    </div>`;
+                    html += `<div class="p-3 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0 text-slate-700 flex justify-between items-center group" onclick="applySuggestion('${inputId}', '${listId}', ${result})"><span class="font-medium group-hover:text-blue-600 text-sm">${fmt} VNĐ</span><span class="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded group-hover:bg-blue-100 group-hover:text-blue-500">x${multiplierFmt}</span></div>`;
                 });
-
                 list.innerHTML = html;
                 list.classList.remove('hidden');
             };
-
             input.addEventListener('input', updateList);
             input.addEventListener('focus', updateList);
-            
-            // Hide with delay to allow click event
-            input.addEventListener('blur', () => {
-                setTimeout(() => list.classList.add('hidden'), 200);
-            });
+            input.addEventListener('blur', () => { setTimeout(() => list.classList.add('hidden'), 200); });
         };
+        window.applySuggestion = function(inputId, listId, value) { document.getElementById(inputId).value = value; document.getElementById(listId).classList.add('hidden'); };
 
-        window.applySuggestion = function(inputId, listId, value) {
-            const input = document.getElementById(inputId);
-            input.value = value;
-            document.getElementById(listId).classList.add('hidden');
-        };
-        
-        // 1. Switch Income/Expense
         window.switchType = function(type) {
             document.getElementById('transType').value = type;
             const btnExpense = document.getElementById('btnTypeExpense');
             const btnIncome = document.getElementById('btnTypeIncome');
             const catContainer = document.getElementById('categoryContainer');
-            
             if (type === 'expense') {
                 btnExpense.className = 'type-btn active-expense';
                 btnIncome.className = 'type-btn inactive';
@@ -637,13 +429,8 @@
             document.getElementById('plannedIncomeDisplay').innerText = formatMoney(window.totalIncome);
             window.budgetConfig = {};
             for (let key in window.currentBudgetRatios) {
-                window.budgetConfig[key] = { 
-                    ...window.currentBudgetRatios[key], 
-                    budget: window.totalIncome * window.currentBudgetRatios[key].percent 
-                };
+                window.budgetConfig[key] = { ...window.currentBudgetRatios[key], budget: window.totalIncome * window.currentBudgetRatios[key].percent };
             }
-            
-            // Populate Select Options
             const catSelect = document.getElementById('category');
             if (catSelect.options.length === 0 || catSelect.dataset.needsUpdate) {
                 catSelect.innerHTML = '';
@@ -661,8 +448,6 @@
             calculateBudgets();
             const filterVal = document.getElementById('monthFilter').value;
             let displayList = [...window.transactions].reverse();
-            
-            // Filter by Month
             if (filterVal !== 'all') {
                 displayList = displayList.filter(t => getMonthYear(t.date) === filterVal);
                 document.getElementById('labelIncome').innerText = `Tháng ${filterVal}`;
@@ -672,39 +457,26 @@
                 document.getElementById('labelExpense').innerText = "Toàn thời gian";
             }
 
-            // Calc Stats
             let actualIncome = 0;
             let actualExpense = 0;
-            const categorySpent = {}; // Only for Expenses
+            const categorySpent = {};
             for(let k in window.currentBudgetRatios) categorySpent[k] = 0;
 
             const historyBody = document.getElementById('historyBody');
             historyBody.innerHTML = '';
-
-            if (displayList.length === 0) {
-                document.getElementById('emptyHistory').classList.remove('hidden');
-            } else {
-                document.getElementById('emptyHistory').classList.add('hidden');
-            }
+            if (displayList.length === 0) document.getElementById('emptyHistory').classList.remove('hidden');
+            else document.getElementById('emptyHistory').classList.add('hidden');
 
             displayList.forEach((t) => {
                 const val = parseFloat(t.amount) || 0;
                 const isIncome = t.type === 'income';
-                
-                if (isIncome) {
-                    actualIncome += val;
-                } else {
+                if (isIncome) actualIncome += val;
+                else {
                     actualExpense += val;
-                    // Track expense category
-                    if (t.category && categorySpent[t.category] !== undefined) {
-                        categorySpent[t.category] += val;
-                    }
+                    if (t.category && categorySpent[t.category] !== undefined) categorySpent[t.category] += val;
                 }
-
-                // Render History Row
                 const deleteParam = window.currentUser ? `'${t.id}'` : window.transactions.indexOf(t);
                 const [datePart, timePart] = t.date.split(' ');
-                
                 const catName = isIncome ? 'Thu nhập' : (window.budgetConfig[t.category] ? window.budgetConfig[t.category].name : 'Chi tiêu');
                 const badgeClass = isIncome ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-slate-100 text-slate-500 border border-slate-200';
                 const moneyClass = isIncome ? 'text-green-600' : 'text-red-500';
@@ -713,49 +485,21 @@
 
                 const row = document.createElement('tr');
                 row.className = 'border-b border-slate-50 hover:bg-slate-50/50 transition';
-                row.innerHTML = `
-                    <td class="py-3 pl-2">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 rounded-full ${isIncome ? 'bg-green-50' : 'bg-red-50'}">
-                                <i data-lucide="${icon}" class="w-4 h-4 ${isIncome ? 'text-green-500' : 'text-red-400'}"></i>
-                            </div>
-                            <div>
-                                <div class="font-medium text-slate-700">${t.desc}</div>
-                                <div class="text-[11px] text-slate-400 flex items-center gap-1">
-                                    <span>${datePart}</span>
-                                    <span class="text-xs">•</span>
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] ${badgeClass}">${catName}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="py-3 text-right pr-2">
-                        <div class="font-bold ${moneyClass}">${sign}${formatMoney(val)}</div>
-                    </td>
-                    <td class="py-3 text-right pr-2 w-10">
-                        <button onclick="handleDelete(${deleteParam})" class="text-slate-300 hover:text-red-500 p-1.5 rounded hover:bg-red-50 transition">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </td>
-                `;
+                row.innerHTML = `<td class="py-3 pl-2"><div class="flex items-center gap-3"><div class="p-2 rounded-full ${isIncome ? 'bg-green-50' : 'bg-red-50'}"><i data-lucide="${icon}" class="w-4 h-4 ${isIncome ? 'text-green-500' : 'text-red-400'}"></i></div><div><div class="font-medium text-slate-700">${t.desc}</div><div class="text-[11px] text-slate-400 flex items-center gap-1"><span>${datePart}</span><span class="text-xs">•</span><span class="px-1.5 py-0.5 rounded text-[10px] ${badgeClass}">${catName}</span></div></div></div></td><td class="py-3 text-right pr-2"><div class="font-bold ${moneyClass}">${sign}${formatMoney(val)}</div></td><td class="py-3 text-right pr-2 w-10"><button onclick="handleDelete(${deleteParam})" class="text-slate-300 hover:text-red-500 p-1.5 rounded hover:bg-red-50 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>`;
                 historyBody.appendChild(row);
             });
             lucide.createIcons();
 
-            // Update Dashboard Stats (UPDATED BALANCE LOGIC)
             document.getElementById('statIncome').innerText = formatMoney(actualIncome);
             document.getElementById('statExpense').innerText = formatMoney(actualExpense);
             
-            // LOGIC MỚI: Số dư = (Thu Nhập Kế Hoạch từ Cài đặt) + (Thu nhập thực tế) - (Chi tiêu thực tế)
-            // Nếu filter theo tháng, ta giả định Thu Nhập Kế Hoạch là thu nhập của tháng đó.
+            // LOGIC SỐ DƯ: CẬP NHẬT TỨC THÌ
             const plannedBase = window.totalIncome || 0;
             const balance = plannedBase + actualIncome - actualExpense;
-            
             const balEl = document.getElementById('statBalance');
             balEl.innerText = formatMoney(balance);
             balEl.className = `text-2xl font-bold mt-1 ${balance >= 0 ? 'text-blue-600' : 'text-red-600'}`;
 
-            // Update Budget Bars (Only Expenses vs Planned Budget)
             const budgetBody = document.getElementById('budgetBody');
             budgetBody.innerHTML = '';
             for (const key in window.budgetConfig) {
@@ -763,35 +507,18 @@
                 const spent = categorySpent[key] || 0;
                 const remaining = conf.budget - spent;
                 const percent = (spent / conf.budget) * 100;
-                
                 let barColor = 'bg-blue-500';
                 let textColor = 'text-green-600';
                 if (percent >= 100) { barColor = 'bg-red-600'; textColor = 'text-red-600'; }
                 else if (percent >= 80) { barColor = 'bg-yellow-500'; textColor = 'text-yellow-600'; }
-
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="py-3 px-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-1.5 h-8 rounded-full" style="background-color: ${conf.color}"></div>
-                            <div class="flex-1">
-                                <div class="font-bold text-slate-700 text-xs uppercase mb-1">${conf.name}</div>
-                                <div class="w-full bg-slate-100 rounded-full h-2">
-                                    <div class="${barColor} h-2 rounded-full transition-all duration-500" style="width: ${Math.min(percent, 100)}%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="py-3 px-2 text-right text-slate-400 font-medium">${formatMoney(conf.budget)}</td>
-                    <td class="py-3 px-2 text-right text-slate-700 font-bold">${formatMoney(spent)}</td>
-                    <td class="py-3 px-4 text-right ${textColor} font-bold">${formatMoney(remaining)}</td>
-                `;
+                row.innerHTML = `<td class="py-3 px-4"><div class="flex items-center gap-3"><div class="w-1.5 h-8 rounded-full" style="background-color: ${conf.color}"></div><div class="flex-1"><div class="font-bold text-slate-700 text-xs uppercase mb-1">${conf.name}</div><div class="w-full bg-slate-100 rounded-full h-2"><div class="${barColor} h-2 rounded-full transition-all duration-500" style="width: ${Math.min(percent, 100)}%"></div></div></div></div></td><td class="py-3 px-2 text-right text-slate-400 font-medium">${formatMoney(conf.budget)}</td><td class="py-3 px-2 text-right text-slate-700 font-bold">${formatMoney(spent)}</td><td class="py-3 px-4 text-right ${textColor} font-bold">${formatMoney(remaining)}</td>`;
                 budgetBody.appendChild(row);
             }
-
             renderChart(categorySpent);
         }
 
+        // --- RESTORED FUNCTION ---
         function renderChart(dataObj) {
             const ctx = document.getElementById('budgetChart').getContext('2d');
             const labels = [];
@@ -827,7 +554,6 @@
             });
         }
 
-        // --- EVENTS ---
         const form = document.getElementById('transactionForm');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -835,165 +561,27 @@
             const amount = parseFloat(document.getElementById('amount').value);
             const category = document.getElementById('category').value;
             const type = document.getElementById('transType').value;
-            
             if(!desc || !amount) return;
-
             const now = new Date();
             const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            
-            const newTrans = {
-                desc, amount, category, type,
-                date: dateStr,
-                timestamp: now.toISOString()
-            };
-
-            const btn = document.getElementById('btnAdd');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '⏳ Đang lưu...';
-            btn.disabled = true;
-
+            const newTrans = { desc, amount, category, type, date: dateStr, timestamp: now.toISOString() };
+            const btn = document.getElementById('btnAdd'); const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Đang lưu...'; btn.disabled = true;
             try {
-                if (window.currentUser) {
-                    await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions'), newTrans);
-                } else {
-                    window.transactions.push(newTrans);
-                    localStorage.setItem('transactions', JSON.stringify(window.transactions));
-                    updateMonthFilterOptions();
-                    updateUI();
-                }
-                form.reset();
-                // Reset type to default
-                switchType('expense');
-                showToast("Đã lưu thành công!", "success");
-            } catch (err) {
-                alert("Lỗi: " + err.message);
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
+                if (window.currentUser) await window.addDoc(window.collection(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions'), newTrans);
+                else { window.transactions.push(newTrans); localStorage.setItem('transactions', JSON.stringify(window.transactions)); updateMonthFilterOptions(); updateUI(); }
+                form.reset(); switchType('expense'); showToast("Đã lưu thành công!", "success");
+            } catch (err) { alert("Lỗi: " + err.message); } finally { btn.innerHTML = originalText; btn.disabled = false; }
         });
 
-        // --- SETTINGS & RESET LOGIC ---
-        window.openSettings = function() {
-            document.getElementById('settingsModal').style.display = 'block';
-            document.getElementById('settingIncome').value = window.totalIncome;
-            renderSettingFunds();
-        }
+        window.openSettings = function() { document.getElementById('settingsModal').style.display = 'block'; document.getElementById('settingIncome').value = window.totalIncome; renderSettingFunds(); }
         window.closeSettings = function() { document.getElementById('settingsModal').style.display = 'none'; }
         
-        window.resetCurrentMonth = async function() {
-            const currentMonth = getMonthYear(new Date().toLocaleDateString('en-GB'));
-            if (!confirm(`Bạn có chắc chắn muốn xóa hết giao dịch của THÁNG ${currentMonth} không?`)) return;
-
-            if (window.currentUser) {
-                // Cloud: find docs in month and delete (batch)
-                // Note: Client-side filtering for simplicity, ideally query by timestamp range
-                const allTrans = window.transactions.filter(t => getMonthYear(t.date) === currentMonth);
-                const batch = window.writeBatch(window.db);
-                allTrans.forEach(t => {
-                    const docRef = window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions', t.id);
-                    batch.delete(docRef);
-                });
-                await batch.commit();
-                showToast(`Đã xóa dữ liệu tháng ${currentMonth}`, "success");
-            } else {
-                // Local
-                window.transactions = window.transactions.filter(t => getMonthYear(t.date) !== currentMonth);
-                localStorage.setItem('transactions', JSON.stringify(window.transactions));
-                updateMonthFilterOptions();
-                updateUI();
-                showToast(`Đã xóa dữ liệu tháng ${currentMonth}`, "success");
-            }
-            closeSettings();
-        }
-
-        window.clearAllData = async function() {
-            if(!confirm("CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn toàn bộ lịch sử thu chi. Bạn có chắc không?")) return;
-            
-            if (window.currentUser) {
-                // Cloud clear - Batch delete (limit 500)
-                const q = window.collection(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions');
-                const snapshot = await window.getDocs(q);
-                const batch = window.writeBatch(window.db);
-                snapshot.forEach(doc => batch.delete(doc.ref));
-                await batch.commit();
-                showToast("Đã xóa toàn bộ trên Cloud", "success");
-            } else {
-                localStorage.removeItem('transactions');
-                window.transactions = [];
-                updateMonthFilterOptions();
-                updateUI();
-                showToast("Đã xóa toàn bộ trên máy", "success");
-            }
-            closeSettings();
-        }
-
-        // --- AUTH ---
-        window.openLoginModal = () => document.getElementById('loginModal').style.display = 'block';
-        window.handleLogin = async () => {
-            const email = document.getElementById('authEmail').value;
-            const pass = document.getElementById('authPassword').value;
-            try {
-                await window.signInWithEmailAndPassword(window.auth, email, pass);
-                document.getElementById('loginModal').style.display = 'none';
-            } catch(e) { document.getElementById('authError').innerText = e.message; document.getElementById('authError').classList.remove('hidden'); }
-        }
-        window.handleRegister = async () => {
-             const email = document.getElementById('authEmail').value;
-            const pass = document.getElementById('authPassword').value;
-            try {
-                await window.createUserWithEmailAndPassword(window.auth, email, pass);
-                document.getElementById('loginModal').style.display = 'none';
-                showToast("Đăng ký thành công!", "success");
-            } catch(e) { document.getElementById('authError').innerText = e.message; document.getElementById('authError').classList.remove('hidden'); }
-        }
-        window.handleLogout = async () => { if(confirm("Đăng xuất?")) await window.signOut(window.auth); }
-
-        // --- LOCAL DATA & HELPERS ---
-        function loadDataFromLocal() {
-            try {
-                window.transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-                window.totalIncome = parseFloat(localStorage.getItem('totalIncome')) || 10000000;
-                const savedRatios = localStorage.getItem('budgetRatios');
-                if (savedRatios) window.currentBudgetRatios = JSON.parse(savedRatios);
-                updateMonthFilterOptions();
-                updateUI();
-            } catch (e) {}
-        }
-
-        window.handleDelete = async function(idOrIndex) {
-            if(!confirm("Xóa dòng này?")) return;
-            if (window.currentUser) {
-                await window.deleteDoc(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions', idOrIndex));
-            } else {
-                window.transactions.splice(idOrIndex, 1);
-                localStorage.setItem('transactions', JSON.stringify(window.transactions));
-                updateUI();
-            }
-        };
-
-        function updateMonthFilterOptions() {
-            const filter = document.getElementById('monthFilter');
-            const currentVal = filter.value;
-            const months = new Set();
-            window.transactions.forEach(t => { const my = getMonthYear(t.date); if(my) months.add(my); });
-            
-            filter.innerHTML = '<option value="all">Toàn thời gian</option>';
-            Array.from(months).sort().reverse().forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m;
-                opt.innerText = `Tháng ${m}`;
-                filter.appendChild(opt);
-            });
-            if ([...filter.options].some(o => o.value === currentVal)) filter.value = currentVal;
-        }
-
+        // --- UPDATED SAVE SETTINGS (INSTANT UI UPDATE) ---
         window.saveSettings = async function() {
             const inc = parseFloat(document.getElementById('settingIncome').value);
-            // Collect Funds
             const rows = document.querySelectorAll('.fund-row');
-            let newRatios = {};
-            let totalP = 0;
+            let newRatios = {}; let totalP = 0;
             rows.forEach(row => {
                 const key = row.dataset.key;
                 const name = row.querySelector('.fund-name').value;
@@ -1001,30 +589,30 @@
                 const color = row.querySelector('.fund-color').value;
                 if(name) { newRatios[key] = { name, percent: percent / 100, color }; totalP += percent; }
             });
-
             if (Math.abs(totalP - 100) > 0.5) return alert(`Tổng tỷ lệ là ${totalP}%. Phải bằng 100%`);
 
+            // 1. UPDATE STATE & UI INSTANTLY
             window.totalIncome = inc;
             window.currentBudgetRatios = newRatios;
+            document.getElementById('category').dataset.needsUpdate = "true";
+            updateUI();
+            closeSettings();
+            showToast("Đã cập nhật số dư!", "success");
 
+            // 2. SYNC BACKGROUND
             if (window.currentUser) {
-                await window.setDoc(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'settings', 'config'), {
+                window.setDoc(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'settings', 'config'), {
                     totalIncome: inc, budgetRatios: newRatios
-                });
+                }).catch(e => console.error("Lỗi sync: ", e));
             } else {
                 localStorage.setItem('totalIncome', inc);
                 localStorage.setItem('budgetRatios', JSON.stringify(newRatios));
             }
-            document.getElementById('category').dataset.needsUpdate = "true";
-            updateUI();
-            closeSettings();
-            showToast("Đã lưu!", "success");
         }
 
         window.renderSettingFunds = function() {
             const container = document.getElementById('budgetListContainer');
-            container.innerHTML = '';
-            let totalP = 0;
+            container.innerHTML = ''; let totalP = 0;
             for(let key in window.currentBudgetRatios) {
                 const item = window.currentBudgetRatios[key];
                 const p = (item.percent * 100).toFixed(1);
@@ -1033,28 +621,50 @@
             }
             document.getElementById('totalPercentDisplay').innerText = `Tổng: ${totalP.toFixed(1)}%`;
         }
-
         window.addFundRowUI = function(key, name, percent, color) {
             const container = document.getElementById('budgetListContainer');
             const div = document.createElement('div');
             div.className = 'grid grid-cols-12 gap-2 items-center fund-row mb-2';
             div.dataset.key = key;
-            div.innerHTML = `
-                <div class="col-span-1"><input type="color" class="fund-color w-full h-8 rounded cursor-pointer border-0 p-0" value="${color}"></div>
-                <div class="col-span-6"><input type="text" class="fund-name input-field py-1 px-2 text-sm" value="${name}"></div>
-                <div class="col-span-3"><input type="number" class="fund-percent input-field py-1 px-2 text-sm text-center" value="${percent}" step="0.5"></div>
-                <div class="col-span-2 text-right"><button onclick="this.parentElement.parentElement.remove()" class="text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
-            `;
+            div.innerHTML = `<div class="col-span-1"><input type="color" class="fund-color w-full h-8 rounded cursor-pointer border-0 p-0" value="${color}"></div><div class="col-span-6"><input type="text" class="fund-name input-field py-1 px-2 text-sm" value="${name}"></div><div class="col-span-3"><input type="number" class="fund-percent input-field py-1 px-2 text-sm text-center" value="${percent}" step="0.5"></div><div class="col-span-2 text-right"><button onclick="this.parentElement.parentElement.remove()" class="text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
             container.appendChild(div);
             lucide.createIcons();
         }
         window.addNewFundRow = function() { window.addFundRowUI('fund_' + Date.now(), 'Quỹ mới', 0, '#000000'); }
-
-        window.showToast = function(msg, type='info') {
-            const t = document.getElementById('toast');
-            t.innerText = msg; t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
+        window.resetCurrentMonth = async function() {
+            const currentMonth = getMonthYear(new Date().toLocaleDateString('en-GB'));
+            if (!confirm(`Bạn có chắc chắn muốn xóa hết giao dịch của THÁNG ${currentMonth} không?`)) return;
+            if (window.currentUser) {
+                const allTrans = window.transactions.filter(t => getMonthYear(t.date) === currentMonth);
+                const batch = window.writeBatch(window.db);
+                allTrans.forEach(t => { batch.delete(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions', t.id)); });
+                await batch.commit();
+            } else {
+                window.transactions = window.transactions.filter(t => getMonthYear(t.date) !== currentMonth);
+                localStorage.setItem('transactions', JSON.stringify(window.transactions));
+                updateMonthFilterOptions(); updateUI();
+            }
+            closeSettings(); showToast(`Đã xóa dữ liệu tháng ${currentMonth}`, "success");
         }
+        window.clearAllData = async function() {
+            if(!confirm("CẢNH BÁO: Xóa vĩnh viễn toàn bộ?")) return;
+            if (window.currentUser) {
+                const q = window.collection(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions');
+                const snapshot = await window.getDocs(q);
+                const batch = window.writeBatch(window.db);
+                snapshot.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+            } else { localStorage.removeItem('transactions'); window.transactions = []; updateMonthFilterOptions(); updateUI(); }
+            closeSettings(); showToast("Đã xóa toàn bộ", "success");
+        }
+        window.openLoginModal = () => document.getElementById('loginModal').style.display = 'block';
+        window.handleLogin = async () => { try { await window.signInWithEmailAndPassword(window.auth, document.getElementById('authEmail').value, document.getElementById('authPassword').value); document.getElementById('loginModal').style.display = 'none'; } catch(e) { document.getElementById('authError').innerText = e.message; document.getElementById('authError').classList.remove('hidden'); } }
+        window.handleRegister = async () => { try { await window.createUserWithEmailAndPassword(window.auth, document.getElementById('authEmail').value, document.getElementById('authPassword').value); document.getElementById('loginModal').style.display = 'none'; showToast("Đăng ký thành công!", "success"); } catch(e) { document.getElementById('authError').innerText = e.message; document.getElementById('authError').classList.remove('hidden'); } }
+        window.handleLogout = async () => { if(confirm("Đăng xuất?")) await window.signOut(window.auth); }
+        function loadDataFromLocal() { try { window.transactions = JSON.parse(localStorage.getItem('transactions')) || []; window.totalIncome = parseFloat(localStorage.getItem('totalIncome')) || 10000000; const savedRatios = localStorage.getItem('budgetRatios'); if (savedRatios) window.currentBudgetRatios = JSON.parse(savedRatios); updateMonthFilterOptions(); updateUI(); } catch (e) {} }
+        window.handleDelete = async function(idOrIndex) { if(!confirm("Xóa dòng này?")) return; if (window.currentUser) await window.deleteDoc(window.doc(window.db, 'artifacts', window.appId, 'users', window.currentUser.uid, 'transactions', idOrIndex)); else { window.transactions.splice(idOrIndex, 1); localStorage.setItem('transactions', JSON.stringify(window.transactions)); updateUI(); } };
+        function updateMonthFilterOptions() { const filter = document.getElementById('monthFilter'); const currentVal = filter.value; const months = new Set(); window.transactions.forEach(t => { const my = getMonthYear(t.date); if(my) months.add(my); }); filter.innerHTML = '<option value="all">Toàn thời gian</option>'; Array.from(months).sort().reverse().forEach(m => { const opt = document.createElement('option'); opt.value = m; opt.innerText = `Tháng ${m}`; filter.appendChild(opt); }); if ([...filter.options].some(o => o.value === currentVal)) filter.value = currentVal; }
+        window.showToast = function(msg, type='info') { const t = document.getElementById('toast'); t.innerText = msg; t.className = type === 'error' ? 'bg-red-600 text-white' : 'bg-slate-800 text-white'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
     </script>
 </body>
 </html>
