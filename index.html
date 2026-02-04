@@ -19,14 +19,15 @@
 
         window.isFirebaseReady = false;
         try {
+            // CẤU HÌNH MỚI THEO YÊU CẦU
             const hardcodedConfig = {
                 apiKey: "AIzaSyADN0-ME1iLd2cKCaSQ6gg-xCuYzqLVOuk",
                 authDomain: "quanlychitieu-43b93.firebaseapp.com",
                 projectId: "quanlychitieu-43b93",
                 storageBucket: "quanlychitieu-43b93.firebasestorage.app",
                 messagingSenderId: "108162857222",
-                appId: "1:108162857222:web:b1e491a6203bc91f3a4687",
-                measurementId: "G-VV0WXLLB9F"
+                appId: "1:108162857222:web:d2006b9cd4d259c63a4687",
+                measurementId: "G-7XSV23Q855"
             };
 
             let firebaseConfig = hardcodedConfig;
@@ -36,7 +37,7 @@
 
             if (firebaseConfig) {
                 const app = initializeApp(firebaseConfig);
-                const analytics = getAnalytics(app); // Khởi tạo Analytics như yêu cầu
+                const analytics = getAnalytics(app); // Khởi tạo Analytics
                 window.auth = getAuth(app);
                 window.db = getFirestore(app);
                 
