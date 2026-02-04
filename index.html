@@ -15,6 +15,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, setDoc, getDoc, writeBatch, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
 
         window.isFirebaseReady = false;
         try {
@@ -24,8 +25,8 @@
                 projectId: "quanlychitieu-43b93",
                 storageBucket: "quanlychitieu-43b93.firebasestorage.app",
                 messagingSenderId: "108162857222",
-                appId: "1:108162857222:web:8aea951954ab71cd3a4687",
-                measurementId: "G-CFTBG1P5DF"
+                appId: "1:108162857222:web:b1e491a6203bc91f3a4687",
+                measurementId: "G-VV0WXLLB9F"
             };
 
             let firebaseConfig = hardcodedConfig;
@@ -35,6 +36,7 @@
 
             if (firebaseConfig) {
                 const app = initializeApp(firebaseConfig);
+                const analytics = getAnalytics(app); // Khởi tạo Analytics như yêu cầu
                 window.auth = getAuth(app);
                 window.db = getFirestore(app);
                 
